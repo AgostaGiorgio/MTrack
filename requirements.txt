@@ -1,0 +1,14 @@
+
+pydantic==2.9.2
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+dependency_injector==4.48.2
+
+httpx==0.25.2
+python-telegram-bot==20.7
+
+openai-whisper
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchaudio
