@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     
     llm_url: str
     llm_model: str
+
+    postgres_user: str
+    postgres_password: str
+    postgres_host: str
+    postgres_port: str
+    postgres_database: str
     
     mtrack_primary_categories: list[str]
     mtrack_secondary_categories: list[str]

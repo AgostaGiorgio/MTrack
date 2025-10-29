@@ -9,6 +9,9 @@ python-telegram-bot==20.7
 
 openai-whisper
 
+sqlalchemy[asyncio] 
+asyncpg
+
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchaudio

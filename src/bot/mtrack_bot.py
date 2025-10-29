@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 
 from src.config.config import settings
-from src.models.ai_messages import ChatMessage
+from src.ai.models.ai_messages import ChatMessage
 from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
@@ -35,9 +35,16 @@ class MTrackBot:
         logger.debug("Added error handler.")
         logger.info("MTrackBot initialized successfully.")
         
-    def run(self):
+    async def run(self):
         logger.info("Starting MTrackBot...")
-        self.__app.run_polling(allowed_updates=Update.ALL_TYPES)
+        await self.__app.initialize()
+        await self.__app.start()
+        await self.__app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    async def stop(self):
+        await self.__app.updater.stop()
+        await self.__app.stop()
+        await self.__app.shutdown()
     
     async def __check_auth(self, update: Update) -> bool:
         """Check if user is authorized"""
