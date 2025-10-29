@@ -1,7 +1,7 @@
 from src.config.logger import *
 import httpx, json
 
-from src.models.ai_messages import ChatMessage
+from src.ai.models.ai_messages import ChatMessage
 
 
 logger = logging.getLogger(__name__)
