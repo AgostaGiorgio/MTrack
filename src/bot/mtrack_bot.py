@@ -1,5 +1,7 @@
 from src.config.logger import *
 from telegram import Update
+import asyncio
+import json
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from pathlib import Path
 import os
@@ -36,16 +38,43 @@ class MTrackBot:
         logger.debug("Added error handler.")
         logger.info("MTrackBot initialized successfully.")
         
+        # Add shutdown event
+        self._shutdown_event = asyncio.Event()
+        
     async def run(self):
+        """Run the bot with proper graceful shutdown handling."""
         logger.info("Starting MTrackBot...")
-        await self.__app.initialize()
-        await self.__app.start()
-        await self.__app.run_polling(allowed_updates=Update.ALL_TYPES)
-
+        
+        try:
+            # Initialize the application
+            await self.__app.initialize()
+            await self.__app.start()
+            
+            # Start polling
+            logger.info("Bot is now polling for updates...")
+            await self.__app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+            
+            # Wait for shutdown signal
+            await self._shutdown_event.wait()
+            
+        except Exception as e:
+            logger.error(f"Error in bot run: {e}")
+            raise
+        finally:
+            # Graceful shutdown
+            logger.info("Shutting down MTrackBot...")
+            try:
+                await self.__app.updater.stop()
+                await self.__app.stop()
+                await self.__app.shutdown()
+                logger.info("MTrackBot shutdown complete.")
+            except Exception as e:
+                logger.error(f"Error during shutdown: {e}")
+    
     async def stop(self):
-        await self.__app.updater.stop()
-        await self.__app.stop()
-        await self.__app.shutdown()
+        """Signal the bot to stop."""
+        logger.info("Stop signal received.")
+        self._shutdown_event.set()
     
     async def __check_auth(self, update: Update) -> bool:
         """Check if user is authorized"""
@@ -118,6 +147,12 @@ class MTrackBot:
         if not replied_to:
             await update.message.reply_text("Please reply to a message containing transaction data to save it.")
             return
+        
+        json_raw = json.loads(replied_to)
+        if isinstance(json_raw, list):
+            expenses = [Expense(**item) for item in json_raw]
+        else:
+            expenses = [Expense(**json_raw)] 
         
         await update.message.reply_text("Save functionality is not implemented yet.")
         
