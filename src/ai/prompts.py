@@ -3,8 +3,8 @@ from src.config.config import settings
 
 def mtrack_prompt() -> str:
     now = datetime.now().isoformat(timespec="seconds")
-    primary_list = ", ".join(settings.mtrack_primary_categories)
-    secondary_list = ", ".join(settings.mtrack_secondary_categories)
+    primary_list = ", ".join([]) #FIXME: settings.mtrack_primary_categories
+    secondary_list = ", ".join([]) #FIXME: settings.mtrack_secondary_categories
 
     return f"""
 You are a precise financial assistant.  

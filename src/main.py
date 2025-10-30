@@ -17,14 +17,6 @@ async def main():
     await db_manager.initialize()
     await bot.run()
 
-    try:
-        await asyncio.Event().wait()
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Stopping bot...")
-    finally:
-        await bot.stop()
-        await db_manager.close()
-        logger.info("Bot stopped!")
     
 if __name__ == "__main__":
     asyncio.run(main())
