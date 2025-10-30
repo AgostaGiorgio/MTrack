@@ -9,6 +9,7 @@ from src.ai.models.ai_messages import ChatMessage
 from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
+from src.db.models.expense import Expense
 
 
 logger = logging.getLogger(__name__)

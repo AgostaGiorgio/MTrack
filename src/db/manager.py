@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import select, func, delete, text, and_
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 import asyncpg
 
 from src.db.models.base import Base
@@ -23,9 +24,41 @@ class MTrackDB:
         
         self.engine = None
         self.async_session = None
+    
+    async def initialize(self):
+        """Initialize database connection and create tables"""
+        await self.__ensure_database_exists()
+        
+        self.engine = create_async_engine(self.connection_url, echo=False)
+        self.async_session = async_sessionmaker(
+            self.engine, 
+            class_=AsyncSession, 
+            expire_on_commit=False
+        )
+        # Create all tables
+        async with self.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            
+        if settings.mtrack_categories:
+            logger.debug("Pre-populating categories...")
+            for name in settings.mtrack_categories:
+                await self.add_category(name=name, ignore_if_exists=True)
+            logger.debug("Categories pre-populated successfully")
+        if settings.mtrack_primary_secondary_categories:
+            logger.debug("Pre-populating primary-secondary category mappings...")
+            for primary, secondary in settings.mtrack_primary_secondary_categories:
+                await self.add_primary_secondary_mapping(primary=primary, secondary=secondary, ignore_if_exists=True)
+            logger.debug("Primary-secondary category mappings pre-populated successfully")
+        if settings.mtrack_card_accounts:
+            logger.debug("Pre-populating card accounts...")
+            for card_number in settings.mtrack_card_accounts:
+                await self.add_card_account(card_number=card_number, ignore_if_exists=True)
+            logger.debug("Card accounts pre-populated successfully")
+        
+        logger.debug("Database initialized successfully")
 
     
-    async def ensure_database_exists(self):
+    async def __ensure_database_exists(self):
         """Create database if it doesn't exist"""
         try:
             # Connect to postgres database to create our database
@@ -48,23 +81,6 @@ class MTrackDB:
             logger.error(f"Error ensuring database exists: {e}")
             raise
     
-    async def initialize(self):
-        """Initialize database connection and create tables"""
-        await self.ensure_database_exists()
-        
-        self.engine = create_async_engine(self.connection_url, echo=False)
-        self.async_session = async_sessionmaker(
-            self.engine, 
-            class_=AsyncSession, 
-            expire_on_commit=False
-        )
-        
-        # Create all tables
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        
-        logger.debug("Database initialized successfully")
-    
     async def close(self):
         """Close database connection"""
         if self.engine:
@@ -72,13 +88,19 @@ class MTrackDB:
     
     # ========== Card Account Methods ==========
     
-    async def add_card_account(self, card_number: str) -> CardAccount:
+    async def add_card_account(self, card_number: str, ignore_if_exists: bool = False) -> CardAccount:
         """Add a new card account"""
         async with self.async_session() as session:
             card = CardAccount(card_number=card_number)
             session.add(card)
-            await session.commit()
-            await session.refresh(card)
+            try:
+                await session.commit()
+                await session.refresh(card)
+            except IntegrityError as e:
+                if ignore_if_exists:
+                    logger.debug(f"Card account '{card_number}' already exists, ignoring as per flag.")
+                else:
+                    raise e
             return card
     
     async def get_or_create_card_account(self, card_number: str) -> CardAccount:
@@ -114,13 +136,20 @@ class MTrackDB:
     
     # ========== Category Methods ==========
     
-    async def add_category(self, name: str) -> Category:
+    async def add_category(self, name: str, ignore_if_exists: bool = False) -> Category:
         """Add a new category"""
         async with self.async_session() as session:
             category = Category(name=name)
             session.add(category)
-            await session.commit()
-            await session.refresh(category)
+            try:
+                await session.commit()
+                await session.refresh(category)
+            except IntegrityError as e:
+                if ignore_if_exists:
+                    logger.debug(f"Category '{name}' already exists, ignoring as per flag.")
+                else:
+                    raise e
+                
             return category
     
     async def get_all_categories(self) -> List[Category]:
@@ -140,27 +169,22 @@ class MTrackDB:
     
     # ========== Primary-Secondary Category Mapping Methods ==========
     
-    async def add_primary_secondary_mapping(self, primary: str, secondary: str) -> PrimarySecondaryCategory:
+    async def add_primary_secondary_mapping(self, primary: str, secondary: str, ignore_if_exists: bool = False) -> PrimarySecondaryCategory:
         """Add a mapping between primary and secondary category"""
         async with self.async_session() as session:
-            # Check that both categories exist
-            result = await session.execute(
-                select(Category).where(Category.name.in_([primary, secondary]))
-            )
-            existing = {cat.name for cat in result.scalars().all()}
-            
-            if primary not in existing:
-                raise ValueError(f"Primary category '{primary}' does not exist")
-            if secondary not in existing:
-                raise ValueError(f"Secondary category '{secondary}' does not exist")
-            
             mapping = PrimarySecondaryCategory(
                 primary_category=primary,
                 secondary_category=secondary
             )
             session.add(mapping)
-            await session.commit()
-            await session.refresh(mapping)
+            try:
+                await session.commit()
+                await session.refresh(mapping)
+            except IntegrityError as e:
+                if ignore_if_exists:
+                    logger.debug(f"Relation between {primary} and {secondary} already exists, ignoring as per flag.", exc_info=e)
+                else:
+                    raise e
             return mapping
     
     async def get_secondary_categories_for_primary(self, primary: str) -> List[str]:

@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import String, ForeignKey, UniqueConstraint, CheckConstraint
+from sqlalchemy import String, ForeignKey, UniqueConstraint, CheckConstraint, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db.models.base import Base
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class PrimarySecondaryCategory(Base):
     __tablename__ = "primary_secondary_cat"
     
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     primary_category: Mapped[str] = mapped_column(
         String(100), 
         ForeignKey("categories.name", ondelete="CASCADE")
