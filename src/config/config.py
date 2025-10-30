@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     postgres_port: str
     postgres_database: str
     
-    mtrack_primary_categories: list[str]
-    mtrack_secondary_categories: list[str]
+    mtrack_categories: list[str] = []
+    mtrack_primary_secondary_categories: list[tuple[str, str]] = []
+    mtrack_card_accounts: list[str] = []
 
     class Config:
         env_file = ".env"
