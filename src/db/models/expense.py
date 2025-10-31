@@ -55,3 +55,11 @@ class Expense(Base):
             "secondary_category": self.secondary_category if self.secondary_category else "",
             "reimbursed": self.reimbursed
         }
+        
+    @classmethod
+    def from_json(cls, data: dict) -> "Expense":
+        ts = data.get("timestamp")
+        if isinstance(ts, str):
+            data = data.copy()
+            data["timestamp"] = datetime.fromisoformat(ts)
+        return cls(**data)

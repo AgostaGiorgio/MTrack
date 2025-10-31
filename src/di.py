@@ -9,6 +9,5 @@ from src.db.manager import MTrackDB
 class DIContainer(containers.DeclarativeContainer):
     whisper = providers.Singleton(WhisperWrapper)
     llm = providers.Singleton(LLMWrapper, llm_url=settings.llm_url, model=settings.llm_model)
-    mtrack_bot = providers.Singleton(MTrackBot, whisper=whisper, llm=llm)
-
     db_manager = providers.Singleton(MTrackDB)
+    mtrack_bot = providers.Singleton(MTrackBot, whisper=whisper, llm=llm, db_manager=db_manager)
