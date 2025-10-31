@@ -12,16 +12,18 @@ from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
 from src.db.models.expense import Expense
+from src.db.manager import MTrackDB
 
 
 logger = logging.getLogger(__name__)
 
 
 class MTrackBot:
-    def __init__(self, whisper: WhisperWrapper, llm: LLMWrapper):
+    def __init__(self, whisper: WhisperWrapper, llm: LLMWrapper, db_manager: MTrackDB):
         logger.info("Initializing MTrackBot...")
         self.__whisper = whisper
         self.__llm = llm
+        self.__db_manager = db_manager
         Path(settings.voice_recording_download_path).mkdir(parents=True, exist_ok=True)
         
         self.__app = Application.builder().token(settings.telegram_bot_token).build()
@@ -150,11 +152,14 @@ class MTrackBot:
         
         json_raw = json.loads(replied_to)
         if isinstance(json_raw, list):
-            expenses = [Expense(**item) for item in json_raw]
+            expenses = [Expense.from_json(item) for item in json_raw]
         else:
-            expenses = [Expense(**json_raw)] 
+            expenses = [Expense.from_json(json_raw)] 
         
-        await update.message.reply_text("Save functionality is not implemented yet.")
+        for exp in expenses:
+            logger.debug(f"Prepared to save expense: {exp}")
+            await self.__db_manager.add_expense(exp.to_dict())
+        await update.message.reply_text(f"✅ Saved {len(expenses)} expense(s) successfully.")
         
     async def __manage_transactions(self, user_msg: str, replied_to: str | None) -> str:
         if replied_to:
