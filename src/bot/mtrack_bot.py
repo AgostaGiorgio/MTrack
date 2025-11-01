@@ -12,6 +12,7 @@ from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
 from src.db.models.expense import Expense
+from src.db.models.primary_secondary_category import PrimarySecondaryCategory
 from src.db.manager import MTrackDB
 
 
@@ -30,9 +31,10 @@ class MTrackBot:
         self.__app.add_handler(CommandHandler("start", self.__start))
         logger.debug("Added /start command handler.")
 
-        self.__app.add_handler(CommandHandler("ok", self.__handle_save))
-        self.__app.add_handler(CommandHandler("save", self.__handle_save))
+        self.__app.add_handlers([CommandHandler("ok", self.__handle_save), CommandHandler("save", self.__handle_save)])
         logger.debug("Added /save or /ok command handler.")
+
+        self.__app.add_handlers([CommandHandler("list", self.__handle_list_config), CommandHandler("config", self.__handle_list_config)])
         
         self.__app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.__handle_text))
         logger.debug("Added text message handler.")
@@ -188,4 +190,20 @@ class MTrackBot:
             logger.debug(f"Prepared to save expense: {exp}")
             await self.__db_manager.add_expense(exp.to_dict())
         await update.message.reply_text(f"✅ Saved {len(expenses)} expense(s) successfully.")
+
+
+    async def __handle_list_config(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.__check_auth(update)
+      
+        cards = await self.__db_manager.get_all_card_accounts()
+        formatted_cards = "💳 Cards Account:\n" + "\n".join([card.to_msg() for card in cards]) 
+
+        categories = await self.__db_manager.get_all_primary_secondary_mappings()
+        formatted_categories = "🏷️ Categories:\n" + PrimarySecondaryCategory.to_msg(categories)
+
+        await update.message.reply_text(
+f"""
+{formatted_cards}\n
+{formatted_categories}
+""")
     

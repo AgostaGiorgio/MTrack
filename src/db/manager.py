@@ -24,7 +24,10 @@ class MTrackDB:
         
         self.engine = None
         self.async_session = None
+
+        self.__memory_cache: dict = {}
     
+
     async def initialize(self):
         """Initialize database connection and create tables"""
         await self.__ensure_database_exists()
@@ -81,6 +84,7 @@ class MTrackDB:
             logger.error(f"Error ensuring database exists: {e}")
             raise
     
+
     async def close(self):
         """Close database connection"""
         if self.engine:
@@ -155,7 +159,12 @@ class MTrackDB:
     async def get_all_categories(self) -> List[Category]:
         """Get all categories"""
         async with self.async_session() as session:
-            result = await session.execute(select(Category))
+            result = await session.execute(
+                select(Category)
+                .options(
+                    selectinload(Category.primary_mappings).selectinload(PrimarySecondaryCategory.secondary)
+                )
+            )
             return result.scalars().all()
     
     async def delete_category(self, name: str) -> bool:
