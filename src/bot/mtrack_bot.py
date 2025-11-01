@@ -29,20 +29,25 @@ class MTrackBot:
         self.__app = Application.builder().token(settings.telegram_bot_token).build()
         self.__app.add_handler(CommandHandler("start", self.__start))
         logger.debug("Added /start command handler.")
+
         self.__app.add_handler(CommandHandler("ok", self.__handle_save))
         self.__app.add_handler(CommandHandler("save", self.__handle_save))
         logger.debug("Added /save or /ok command handler.")
+        
         self.__app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.__handle_text))
         logger.debug("Added text message handler.")
+        
         self.__app.add_handler(MessageHandler(filters.VOICE, self.__handle_voice))
         logger.debug("Added voice message handler.")
-        self.__app.add_error_handler(self.error_handler)
+        
+        self.__app.add_error_handler(self.__error_handler)
         logger.debug("Added error handler.")
         logger.info("MTrackBot initialized successfully.")
         
         # Add shutdown event
         self._shutdown_event = asyncio.Event()
         
+
     async def run(self):
         """Run the bot with proper graceful shutdown handling."""
         logger.info("Starting MTrackBot...")
@@ -73,11 +78,13 @@ class MTrackBot:
             except Exception as e:
                 logger.error(f"Error during shutdown: {e}")
     
+
     async def stop(self):
         """Signal the bot to stop."""
         logger.info("Stop signal received.")
         self._shutdown_event.set()
     
+
     async def __check_auth(self, update: Update) -> bool:
         """Check if user is authorized"""
         chat_id = update.effective_chat.id
@@ -86,6 +93,7 @@ class MTrackBot:
             await update.message.reply_text("⛔ Sorry, you are not authorized to use this bot.")
             return
     
+
     async def __start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
         
@@ -94,8 +102,10 @@ class MTrackBot:
             'Send me a text message or a voice note!'
         )
        
-    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    async def __error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Exception while handling an update: {context.error}")
+
 
     async def __handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
@@ -110,7 +120,8 @@ class MTrackBot:
         )
         
         await update.message.reply_text(transactions_json)
-        
+
+
     async def __handle_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
         
@@ -139,7 +150,24 @@ class MTrackBot:
         )
         
         await update.message.reply_text(transactions_json)
-        
+    
+
+    async def __manage_transactions(self, user_msg: str, replied_to: str | None) -> str:
+        if replied_to:
+            prompt = mtrack_modify_transaction_prompt()
+            msg = [
+                ChatMessage(role="assistant", content=replied_to),
+                ChatMessage(role="user", content=user_msg)
+            ]
+        else:
+            prompt = mtrack_prompt()
+            msg = user_msg
+            
+        logger.debug(f"Generated prompt for LLM...")
+        transactions_json = await self.__llm.ainvoke(prompt=prompt, messages=msg)
+        return transactions_json
+    
+
     async def __handle_save(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
         
@@ -160,18 +188,4 @@ class MTrackBot:
             logger.debug(f"Prepared to save expense: {exp}")
             await self.__db_manager.add_expense(exp.to_dict())
         await update.message.reply_text(f"✅ Saved {len(expenses)} expense(s) successfully.")
-        
-    async def __manage_transactions(self, user_msg: str, replied_to: str | None) -> str:
-        if replied_to:
-            prompt = mtrack_modify_transaction_prompt()
-            msg = [
-                ChatMessage(role="assistant", content=replied_to),
-                ChatMessage(role="user", content=user_msg)
-            ]
-        else:
-            prompt = mtrack_prompt()
-            msg = user_msg
-            
-        logger.debug(f"Generated prompt for LLM...")
-        transactions_json = await self.__llm.ainvoke(prompt=prompt, messages=msg)
-        return transactions_json
+    
