@@ -19,9 +19,9 @@ async def main():
     
     loop = asyncio.get_running_loop()
     
-    # Register signal handlers
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(bot.stop()))
+    # Register signal handlers FIXME
+    #for sig in (signal.SIGTERM, signal.SIGINT):
+    #    loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(bot.stop()))
     
     try:
         # Run the bot

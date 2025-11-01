@@ -15,5 +15,8 @@ class CardAccount(Base):
     # Relationship
     expenses: Mapped[List["Expense"]] = relationship(back_populates="card")
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<CardAccount(card_number='{self.card_number}')>"
+    
+    def to_msg(self) -> str:
+        return f"• {self.card_number}"

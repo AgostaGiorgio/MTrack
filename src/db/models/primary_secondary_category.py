@@ -36,5 +36,14 @@ class PrimarySecondaryCategory(Base):
         CheckConstraint('primary_category != secondary_category', name='check_different_categories'),
     )
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<PrimarySecondaryCategory(primary='{self.primary_category}', secondary='{self.secondary_category}')>"
+
+
+    @staticmethod
+    def to_msg(grouped_relations: dict[str, list[str]]) -> str:
+        formatted_relations: list[str] = []
+        for primary, secondaries in grouped_relations.items():
+            formatted_relations.append(f"• {primary}\n" + "\n".join([f"    • {secondary_category}" for secondary_category in secondaries]))
+
+        return "\n\n".join(formatted_relations)
