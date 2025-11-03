@@ -16,12 +16,13 @@ async def main():
     bot = containter.mtrack_bot()
 
     await db_manager.initialize()
-    
-    loop = asyncio.get_running_loop()
-    
-    # Register signal handlers FIXME
-    #for sig in (signal.SIGTERM, signal.SIGINT):
-    #    loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(bot.stop()))
+        
+    def signal_handler(signum, frame):
+        logger.info(f"Received signal {signum}, initiating shutdown...")
+        asyncio.create_task(bot.stop())
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, signal_handler)
     
     try:
         # Run the bot
