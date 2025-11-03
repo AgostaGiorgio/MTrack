@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    start_health_server(port=8080)
+    start_health_server(port=9090)
 
     containter = DIContainer()
     db_manager = containter.db_manager()
