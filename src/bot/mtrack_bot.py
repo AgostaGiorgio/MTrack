@@ -155,14 +155,15 @@ class MTrackBot:
     
 
     async def __manage_transactions(self, user_msg: str, replied_to: str | None) -> str:
+        categories = await self.__db_manager.get_all_primary_secondary_mappings()
         if replied_to:
-            prompt = mtrack_modify_transaction_prompt()
+            prompt = mtrack_modify_transaction_prompt(categories=categories)
             msg = [
                 ChatMessage(role="assistant", content=replied_to),
                 ChatMessage(role="user", content=user_msg)
             ]
         else:
-            prompt = mtrack_prompt()
+            prompt = mtrack_prompt(categories=categories)
             msg = user_msg
             
         logger.debug(f"Generated prompt for LLM...")
