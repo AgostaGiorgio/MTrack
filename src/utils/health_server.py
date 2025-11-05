@@ -22,7 +22,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-def start_health_server(port: int = 8080):
+def start_health_server(port: int = 9090):
     def _run():
         try:
             httpd = HTTPServer(("0.0.0.0", port), HealthHandler)
