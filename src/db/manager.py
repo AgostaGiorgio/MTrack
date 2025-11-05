@@ -1,7 +1,7 @@
 from src.config.logger import *
 from src.config.config import settings
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from datetime import datetime
 from sqlalchemy import select, func, delete, text, and_
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -123,7 +123,7 @@ class MTrackDB:
             
             return card
     
-    async def get_all_card_accounts(self) -> List[CardAccount]:
+    async def get_all_card_accounts(self) -> list[CardAccount]:
         """Get all card accounts"""
         async with self.async_session() as session:
             result = await session.execute(select(CardAccount))
@@ -156,7 +156,7 @@ class MTrackDB:
                 
             return category
     
-    async def get_all_categories(self) -> List[Category]:
+    async def get_all_categories(self) -> list[Category]:
         """Get all categories"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -196,7 +196,7 @@ class MTrackDB:
                     raise e
             return mapping
     
-    async def get_secondary_categories_for_primary(self, primary: str) -> List[str]:
+    async def get_secondary_categories_for_primary(self, primary: str) -> list[str]:
         """Get all secondary categories for a given primary category"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -205,8 +205,11 @@ class MTrackDB:
             )
             return [row[0] for row in result]
     
-    async def get_all_primary_secondary_mappings(self) -> Dict[str, List[str]]:
+    async def get_all_primary_secondary_mappings(self) -> dict[str, list[str]]:
         """Get all primary-secondary mappings as a dictionary"""
+        if "categories" in self.__memory_cache:
+            return self.__memory_cache["categories"]
+
         async with self.async_session() as session:
             result = await session.execute(
                 select(PrimarySecondaryCategory)
@@ -218,12 +221,13 @@ class MTrackDB:
             mappings = result.scalars().all()
             
             # Group by primary category
-            grouped: Dict[str, List[str]] = {}
+            grouped: dict[str, list[str]] = {}
             for mapping in mappings:
                 if mapping.primary_category not in grouped:
                     grouped[mapping.primary_category] = []
                 grouped[mapping.primary_category].append(mapping.secondary_category)
             
+            self.__memory_cache["categories"] = grouped
             return grouped
     
     async def delete_primary_secondary_mapping(self, primary: str, secondary: str) -> bool:
@@ -255,7 +259,7 @@ class MTrackDB:
     
     # ========== Expense Methods ==========
     
-    async def add_expense(self, expense_data: Dict[str, Any]) -> Expense:
+    async def add_expense(self, expense_data: dict[str, Any]) -> Expense:
         """Add a new expense"""
         async with self.async_session() as session:
             # Ensure card account exists
@@ -307,7 +311,7 @@ class MTrackDB:
             await session.refresh(expense, ["card", "primary_cat", "secondary_cat"])
             return expense
     
-    async def update_expense(self, expense_id: int, expense_data: Dict[str, Any]) -> Expense:
+    async def update_expense(self, expense_id: int, expense_data: dict[str, Any]) -> Expense:
         """Update an existing expense"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -376,7 +380,7 @@ class MTrackDB:
             await session.commit()
             return result.rowcount > 0
     
-    async def get_expense(self, expense_id: int) -> Optional[Expense]:
+    async def get_expense(self, expense_id: int) -> Expense | None:
         """Get a single expense by ID"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -390,7 +394,7 @@ class MTrackDB:
             )
             return result.scalar_one_or_none()
     
-    async def get_all_expenses(self) -> List[Expense]:
+    async def get_all_expenses(self) -> list[Expense]:
         """Get all expenses"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -404,7 +408,7 @@ class MTrackDB:
             )
             return result.scalars().all()
     
-    async def get_expenses_by_primary_category(self, category_name: str) -> List[Expense]:
+    async def get_expenses_by_primary_category(self, category_name: str) -> list[Expense]:
         """Get all expenses for a primary category"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -419,7 +423,7 @@ class MTrackDB:
             )
             return result.scalars().all()
     
-    async def get_expenses_by_secondary_category(self, category_name: str) -> List[Expense]:
+    async def get_expenses_by_secondary_category(self, category_name: str) -> list[Expense]:
         """Get all expenses for a secondary category"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -434,7 +438,7 @@ class MTrackDB:
             )
             return result.scalars().all()
     
-    async def get_expenses_by_card(self, card_number: str) -> List[Expense]:
+    async def get_expenses_by_card(self, card_number: str) -> list[Expense]:
         """Get all expenses for a card account"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -449,7 +453,7 @@ class MTrackDB:
             )
             return result.scalars().all()
     
-    async def get_category_summary(self) -> List[Dict[str, Any]]:
+    async def get_category_summary(self) -> list[dict[str, Any]]:
         """Get total spending grouped by primary category"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -467,7 +471,7 @@ class MTrackDB:
                 for row in result
             ]
     
-    async def get_secondary_category_summary(self) -> List[Dict[str, Any]]:
+    async def get_secondary_category_summary(self) -> list[dict[str, Any]]:
         """Get total spending grouped by secondary category"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -486,7 +490,7 @@ class MTrackDB:
                 for row in result
             ]
     
-    async def get_card_summary(self) -> List[Dict[str, Any]]:
+    async def get_card_summary(self) -> list[dict[str, Any]]:
         """Get total spending grouped by card account"""
         async with self.async_session() as session:
             result = await session.execute(
@@ -506,7 +510,7 @@ class MTrackDB:
     
     # ========== Raw Query Method ==========
     
-    async def execute_raw_query(self, query: str, params: Optional[Dict] = None):
+    async def execute_raw_query(self, query: str, params: dict | None = None):
         """Execute a raw SQL query"""
         async with self.async_session() as session:
             result = await session.execute(text(query), params or {})

@@ -1,10 +1,9 @@
 from datetime import datetime
-from src.config.config import settings
+import json
 
-def mtrack_prompt() -> str:
+def mtrack_prompt(categories: dict[str, list[str]]) -> str:
     now = datetime.now().isoformat(timespec="seconds")
-    primary_list = ", ".join([]) #FIXME: settings.mtrack_primary_categories
-    secondary_list = ", ".join([]) #FIXME: settings.mtrack_secondary_categories
+    categories_str = json.dumps(categories, ensure_ascii=False, indent=2)
 
     return f"""
 You are a precise financial assistant.  
@@ -19,8 +18,8 @@ Each transaction must be represented as a JSON object:
   "card_account": string, one of [9314, 8281, cash, 3327, saving, conto principale, 1456],
   "amount": number,
   "description": short natural-language summary of the transaction,
-  "primary_category": string, one of [{primary_list}] or "unknown" if unclear,
-  "secondary_category": string, one of [{secondary_list}] or "" (empty string) if not applicable
+  "primary_category": string or "unknown" if unclear,
+  "secondary_category": string or "" (empty string) if not applicable
 }}
 
 ### Rules
@@ -33,7 +32,10 @@ Each transaction must be represented as a JSON object:
 - Use only the provided categories.
 - Extract one JSON object per transaction the user mentions. Dont merge expenses for any reason.
 - Usually 'spesa settimanale' has primary category 'Cibo' and secondary category 'Spesa'.
-- Today’s date/time is **{now}**.ß
+- Today’s date/time is **{now}**.
+
+### Available categories:
+{categories_str}
 
 ###Examples:
 - Allora oggi ho fatto la spesa, io ho comprato 120 dirham per prodotti casa, 30 dirham per i panolini di Eduardo e 560 dirham per la spesa in generale settimanale.
@@ -66,7 +68,9 @@ Each transaction must be represented as a JSON object:
 ]
 """
 
-def mtrack_modify_transaction_prompt() -> str:
+def mtrack_modify_transaction_prompt(categories: dict[str, list[str]]) -> str:
+    categories_str = json.dumps(categories, ensure_ascii=False, indent=2)
+
     return f"""
 You are a precise financial assistant.
 The user will provide you with a JSON object representing a financial transaction, and a modification request in natural language.
@@ -80,8 +84,8 @@ The transaction JSON object has the following structure:
   "card_account": string, one of [9314, 8281, cash, 3327, saving, conto principale, 1456],
   "amount": number,
   "description": short natural-language summary of the transaction,
-  "primary_category": string, one of [{', '.join(settings.mtrack_primary_categories)}] or "unknown" if unclear,
-  "secondary_category": string, one of [{', '.join(settings.mtrack_secondary_categories)}] or "" (empty string) if not applicable
+  "primary_category": string or "unknown" if unclear,
+  "secondary_category": string or "" (empty string) if not applicable
 }}
 
 ### Rules
@@ -90,6 +94,9 @@ The transaction JSON object has the following structure:
 - No explanations, no markdown, no commentary — only the JSON output.
 - Use only the provided categories.
 - If the modification request does not specify a change to a field, keep the original value.
+
+### Available categories:
+{categories_str}
 
 ### Example
 - original transactions:
