@@ -394,18 +394,34 @@ class MTrackDB:
             )
             return result.scalar_one_or_none()
     
-    async def get_all_expenses(self) -> list[Expense]:
-        """Get all expenses"""
+    async def get_all_expenses(
+        self, year: int | None = None, month: int | None = None
+    ) -> list[Expense]:
+        """Get all expenses, optionally filtered by month (default = current month)"""
         async with self.async_session() as session:
-            result = await session.execute(
+            now = datetime.now()
+            year = year or now.year
+            month = month or now.month
+
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                end_date = datetime(year, month + 1, 1)
+
+            # Build query
+            stmt = (
                 select(Expense)
                 .options(
                     selectinload(Expense.card),
                     selectinload(Expense.primary_cat),
-                    selectinload(Expense.secondary_cat)
+                    selectinload(Expense.secondary_cat),
                 )
+                .where(Expense.timestamp >= start_date, Expense.timestamp < end_date)
                 .order_by(Expense.timestamp.desc())
             )
+
+            result = await session.execute(stmt)
             return result.scalars().all()
     
     async def get_expenses_by_primary_category(self, category_name: str) -> list[Expense]:
