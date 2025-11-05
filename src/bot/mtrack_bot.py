@@ -2,6 +2,7 @@ from src.config.logger import *
 from telegram import Update
 import asyncio
 import json
+from collections import defaultdict
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from pathlib import Path
 import os
@@ -41,6 +42,9 @@ class MTrackBot:
         
         self.__app.add_handler(MessageHandler(filters.VOICE, self.__handle_voice))
         logger.debug("Added voice message handler.")
+
+        self.__app.add_handler(CommandHandler("summary", self.__handle_summary))
+        logger.debug("Added summary command handler.")
         
         self.__app.add_error_handler(self.__error_handler)
         logger.debug("Added error handler.")
@@ -202,9 +206,54 @@ class MTrackBot:
         categories = await self.__db_manager.get_all_primary_secondary_mappings()
         formatted_categories = "🏷️ Categories:\n" + PrimarySecondaryCategory.to_msg(categories)
 
-        await update.message.reply_text(
-f"""
-{formatted_cards}\n
-{formatted_categories}
-""")
+        await update.message.reply_text(f"{formatted_cards}\n{formatted_categories}")
     
+
+    async def __handle_summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.__check_auth(update)
+
+        args = context.args
+        ym = args[0] if args else None  # e.g. "/summary 2025-10"
+
+        if ym:
+            year, month = map(int, ym.split("-"))
+            expenses = await self.__db_manager.get_all_expenses(year=year, month=month)
+        else:
+            expenses = await self.__db_manager.get_all_expenses()  # current month
+
+        text = self.build_month_summary(expenses)
+        await update.message.reply_text(text)
+
+
+    def build_month_summary(self, expenses: list[Expense]) -> str:
+        """Build a summary message for a list of expenses."""
+        if not expenses:
+            return "📭 No expenses found for this month."
+
+        total = 0.0
+        total_by_card = defaultdict(float)
+        total_by_category = defaultdict(float)
+
+        # Aggregate data
+        for exp in expenses:
+            effective = exp.amount - exp.reimbursed
+            total += effective
+            total_by_card[exp.card_account] += exp.amount  # raw spend per card
+            total_by_category[exp.primary_category] += effective
+
+        # 🧾 Build Telegram message
+        lines = []
+        lines.append("📊 *Monthly Summary*")
+        lines.append(f"Total spent: *{total:.2f}*")
+
+        # By card
+        lines.append("\n💳 *By Card*")
+        for card, amt in sorted(total_by_card.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"• `{card}` → {amt:.2f}")
+
+        # By category
+        lines.append("\n🏷️ *By Category*")
+        for cat, amt in sorted(total_by_category.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"• {cat} → {amt:.2f}")
+
+        return "\n".join(lines)
