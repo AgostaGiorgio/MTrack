@@ -12,6 +12,7 @@ from src.ai.models.ai_messages import ChatMessage
 from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
 from src.utils.exporter import export_csv
+from src.utils.importer import import_from_csv
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
 from src.db.models.expense import Expense
 from src.db.models.primary_secondary_category import PrimarySecondaryCategory
@@ -52,6 +53,9 @@ class MTrackBot:
 
         self.__app.add_handler(CommandHandler("export", self.__handle_export))
         logger.debug("Added export command handler.")
+
+        self.__app.add_handler(MessageHandler(filters.Document.ALL, self.__handle_import))
+        logger.debug("Added csv file import handler.")
         
         self.__app.add_error_handler(self.__error_handler)
         logger.debug("Added error handler.")
@@ -230,6 +234,27 @@ class MTrackBot:
 
         await update.message.reply_text(str(expense))
     
+
+    async def __handle_import(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.__check_auth(update)
+        
+        doc = update.message.document
+        file_id = doc.file_id
+        
+        file = await context.bot.get_file(file_id)
+        logger.debug(f"Downloading document: {doc.file_name}")
+        file_bytes = await file.download_as_bytearray()
+        expenses = import_from_csv(file_bytes)
+        
+        if not expenses:
+            await update.message.reply_text("📭 No expenses found to import")
+        else: 
+            for exp in expenses:
+                await self.__db_manager.add_expense(exp.to_dict())
+            data = expenses[0].timestamp.strftime("%B %Y")
+            data_command = expenses[0].timestamp.strftime("%Y-%m")
+            await update.message.reply_text(f"All done! 🎉 I've successfully loaded {len(expenses)} transactions for {data}.\nTo see a summary, just use: /summary {data_command}")
+        
 
     async def __handle_export(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
