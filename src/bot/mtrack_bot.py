@@ -11,6 +11,7 @@ from src.config.config import settings
 from src.ai.models.ai_messages import ChatMessage
 from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
+from src.utils.exporter import export_csv
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
 from src.db.models.expense import Expense
 from src.db.models.primary_secondary_category import PrimarySecondaryCategory
@@ -44,10 +45,13 @@ class MTrackBot:
         logger.debug("Added voice message handler.")
 
         self.__app.add_handler(CommandHandler("last", self.__handle_last_expense))
-        logger.debug("Added summary command handler.")
+        logger.debug("Added last expense command handler.")
 
         self.__app.add_handler(CommandHandler("summary", self.__handle_summary))
         logger.debug("Added summary command handler.")
+
+        self.__app.add_handler(CommandHandler("export", self.__handle_export))
+        logger.debug("Added export command handler.")
         
         self.__app.add_error_handler(self.__error_handler)
         logger.debug("Added error handler.")
@@ -222,10 +226,33 @@ class MTrackBot:
             year, month = map(int, ym.split("-"))
             expense = await self.__db_manager.get_last_expense(year=year, month=month)
         else:
-            expense = await self.__db_manager.get_last_expense()  # current month
+            expense = await self.__db_manager.get_last_expense()
 
         await update.message.reply_text(str(expense))
     
+
+    async def __handle_export(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.__check_auth(update)
+
+        args = context.args
+        ym = args[0] if args else None  # e.g. "/export 2025-10"
+
+        if ym:
+            year, month = map(int, ym.split("-"))
+            expenses = await self.__db_manager.get_all_expenses(year=year, month=month)
+        else:
+            expenses = await self.__db_manager.get_all_expenses()
+        
+        if not expenses:
+            await update.message.reply_text("📭 No expenses found for this month.")
+        else:        
+            bytes = export_csv(expenses)
+            await update._bot.send_document(
+                chat_id=update.effective_chat.id,
+                document=bytes,
+                caption=f"Your data report is ready! ✨"
+            )
+        
 
     async def __handle_summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
