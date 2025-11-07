@@ -43,6 +43,9 @@ class MTrackBot:
         self.__app.add_handler(MessageHandler(filters.VOICE, self.__handle_voice))
         logger.debug("Added voice message handler.")
 
+        self.__app.add_handler(CommandHandler("last", self.__handle_last_expense))
+        logger.debug("Added summary command handler.")
+
         self.__app.add_handler(CommandHandler("summary", self.__handle_summary))
         logger.debug("Added summary command handler.")
         
@@ -207,6 +210,21 @@ class MTrackBot:
         formatted_categories = "\n\n 🏷️ Categories:\n" + PrimarySecondaryCategory.to_msg(categories)
 
         await update.message.reply_text(f"{formatted_cards}\n{formatted_categories}")
+    
+
+    async def __handle_last_expense(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.__check_auth(update)
+
+        args = context.args
+        ym = args[0] if args else None  # e.g. "/summary 2025-10"
+
+        if ym:
+            year, month = map(int, ym.split("-"))
+            expense = await self.__db_manager.get_last_expense(year=year, month=month)
+        else:
+            expense = await self.__db_manager.get_last_expense()  # current month
+
+        await update.message.reply_text(str(expense))
     
 
     async def __handle_summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

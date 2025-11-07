@@ -395,6 +395,36 @@ class MTrackDB:
             )
             return result.scalar_one_or_none()
     
+    async def get_last_expense(
+        self, year: int | None = None, month: int | None = None
+    ) -> Expense | None:
+        """Get a single expense by ID"""
+        async with self.async_session() as session:
+            now = datetime.now()
+            year = year or now.year
+            month = month or now.month
+
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                end_date = datetime(year, month + 1, 1)
+            
+            stmt = (
+                select(Expense)
+                .options(
+                    selectinload(Expense.card),
+                    selectinload(Expense.primary_cat),
+                    selectinload(Expense.secondary_cat)
+                )
+                .where(Expense.timestamp >= start_date, Expense.timestamp < end_date)
+                .order_by(Expense.timestamp.desc())
+                .limit(1)
+            )
+            
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+    
     async def get_all_expenses(
         self, year: int | None = None, month: int | None = None
     ) -> list[Expense]:
