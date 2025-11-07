@@ -42,7 +42,7 @@ class Expense(Base):
     )
     
     def __repr__(self):
-        return f"<Expense(id={self.id}, amount={self.amount}, description='{self.description}')>"
+        return f"🗓️ {self.timestamp.isoformat(sep=' ')} 💳 {self.amount} 📜 {self.description}"
     
     def to_dict(self):
         return {
