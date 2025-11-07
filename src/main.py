@@ -2,6 +2,7 @@ import asyncio
 import signal
 from src.config.logger import *
 from src.utils.health_server import start_health_server
+from src.utils.voice_files_cleaner import voice_files_cleaner
 
 from src.di import DIContainer
 
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 async def main():
     start_health_server(port=9090)
+    asyncio.create_task(voice_files_cleaner())
 
     containter = DIContainer()
     db_manager = containter.db_manager()
