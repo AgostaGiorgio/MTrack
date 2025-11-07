@@ -225,7 +225,8 @@ class MTrackDB:
             for mapping in mappings:
                 if mapping.primary_category not in grouped:
                     grouped[mapping.primary_category] = []
-                grouped[mapping.primary_category].append(mapping.secondary_category)
+                if mapping.secondary_category:
+                    grouped[mapping.primary_category].append(mapping.secondary_category)
             
             self.__memory_cache["categories"] = grouped
             return grouped

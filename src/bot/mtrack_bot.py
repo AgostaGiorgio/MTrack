@@ -201,10 +201,10 @@ class MTrackBot:
         await self.__check_auth(update)
       
         cards = await self.__db_manager.get_all_card_accounts()
-        formatted_cards = "💳 Cards Account:\n" + "\n".join([card.to_msg() for card in cards]) 
+        formatted_cards = " 💳 Cards Account:\n" + "\n".join([card.to_msg() for card in cards]) 
 
         categories = await self.__db_manager.get_all_primary_secondary_mappings()
-        formatted_categories = "🏷️ Categories:\n" + PrimarySecondaryCategory.to_msg(categories)
+        formatted_categories = "\n\n 🏷️ Categories:\n" + PrimarySecondaryCategory.to_msg(categories)
 
         await update.message.reply_text(f"{formatted_cards}\n{formatted_categories}")
     

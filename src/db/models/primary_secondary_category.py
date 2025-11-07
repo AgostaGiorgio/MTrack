@@ -17,7 +17,8 @@ class PrimarySecondaryCategory(Base):
     )
     secondary_category: Mapped[str] = mapped_column(
         String(100), 
-        ForeignKey("categories.name", ondelete="CASCADE")
+        ForeignKey("categories.name", ondelete="CASCADE"),
+        nullable=True
     )
     
     # Relationships
@@ -44,6 +45,6 @@ class PrimarySecondaryCategory(Base):
     def to_msg(grouped_relations: dict[str, list[str]]) -> str:
         formatted_relations: list[str] = []
         for primary, secondaries in grouped_relations.items():
-            formatted_relations.append(f"• {primary}\n" + "\n".join([f"    • {secondary_category}" for secondary_category in secondaries]))
+            formatted_relations.append(f"• {primary}\n" + "\n".join([f"    • {secondary_category}" for secondary_category in secondaries if secondary_category]))
 
         return "\n\n".join(formatted_relations)
