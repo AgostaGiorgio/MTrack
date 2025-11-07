@@ -266,11 +266,11 @@ class MTrackBot:
         else:
             expenses = await self.__db_manager.get_all_expenses()  # current month
 
-        text = self.build_month_summary(expenses)
+        text = self.__build_month_summary(expenses)
         await update.message.reply_text(text)
 
 
-    def build_month_summary(self, expenses: list[Expense]) -> str:
+    def __build_month_summary(self, expenses: list[Expense]) -> str:
         """Build a summary message for a list of expenses."""
         if not expenses:
             return "📭 No expenses found for this month."
