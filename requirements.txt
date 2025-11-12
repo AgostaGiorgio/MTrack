@@ -15,6 +15,7 @@ asyncpg
 matplotlib
 weasyprint
 jinja2
+scipy
 
 
 --extra-index-url https://download.pytorch.org/whl/cpu
