@@ -454,6 +454,33 @@ class MTrackDB:
 
             result = await session.execute(stmt)
             return result.scalars().all()
+        
+    async def get_all_expenses_from(
+        self, year: int | None = None, month: int | None = None
+    ) -> list[Expense]:
+        """Get all expenses, optionally filtered by month (default = current month)"""
+        async with self.async_session() as session:
+            now = datetime.now()
+            year = year or now.year
+            month = month or now.month
+
+            start_date = datetime(year, month, 1)
+            end_date = datetime.now()
+
+            # Build query
+            stmt = (
+                select(Expense)
+                .options(
+                    selectinload(Expense.card),
+                    selectinload(Expense.primary_cat),
+                    selectinload(Expense.secondary_cat),
+                )
+                .where(Expense.timestamp >= start_date, Expense.timestamp < end_date)
+                .order_by(Expense.timestamp.desc())
+            )
+
+            result = await session.execute(stmt)
+            return result.scalars().all()
     
     async def get_expenses_by_primary_category(self, category_name: str) -> list[Expense]:
         """Get all expenses for a primary category"""

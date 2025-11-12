@@ -1,3 +1,4 @@
+from datetime import datetime
 from src.config.logger import *
 from telegram import Update
 import asyncio
@@ -11,7 +12,7 @@ from src.config.config import settings
 from src.ai.models.ai_messages import ChatMessage
 from src.ai.llm_wrapper import LLMWrapper
 from src.ai.whisper_wrapper import WhisperWrapper
-from src.utils.exporter import export_csv
+from src.utils.exporter import export_csv, export_annual
 from src.utils.importer import import_from_csv
 from src.ai.prompts import mtrack_prompt, mtrack_modify_transaction_prompt
 from src.db.models.expense import Expense
@@ -47,6 +48,9 @@ class MTrackBot:
 
         self.__app.add_handler(CommandHandler("last", self.__handle_last_expense))
         logger.debug("Added last expense command handler.")
+
+        self.__app.add_handler(CommandHandler("annual", self.__handle_annual_summary))
+        logger.debug("Added annual summary command handler.")
 
         self.__app.add_handler(CommandHandler("summary", self.__handle_summary))
         logger.debug("Added summary command handler.")
@@ -278,6 +282,27 @@ class MTrackBot:
                 caption=f"Your data report is ready! ✨"
             )
         
+
+    async def __handle_annual_summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.__check_auth(update)
+
+        args = context.args
+        y = args[0] if args else datetime.now().year  # e.g. "/annual 2025"
+
+        expenses = await self.__db_manager.get_all_expenses_from(year=y, month=1)
+
+        if not expenses:
+            await update.message.reply_text("📭 No expenses found for this year.")
+        else:        
+            logger.debug(f"Exporting {len(expenses)} transactions...")
+            bytes = export_annual(expenses)
+            await update._bot.send_document(
+                chat_id=update.effective_chat.id,
+                document=bytes,
+                filename=f"Annual_Report_{y}.pdf",
+                caption=f"Your data report is ready! ✨"
+            )
+
 
     async def __handle_summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.__check_auth(update)
