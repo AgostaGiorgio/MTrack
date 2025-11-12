@@ -12,6 +12,11 @@ openai-whisper
 sqlalchemy[asyncio] 
 asyncpg
 
+matplotlib
+weasyprint
+jinja2
+
+
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchaudio
