@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip } from 'chart.js'
 
-// Registriamo solo i moduli di Chart.js che ci servono per la ciambella
 ChartJS.register(ArcElement, Tooltip)
 
 const props = defineProps({
@@ -13,32 +12,30 @@ const props = defineProps({
   }
 })
 
-// Formattiamo i dati nel modo in cui se li aspetta Chart.js
 const chartData = computed(() => ({
   labels: props.categories.map(c => c.name),
   datasets: [
     {
       data: props.categories.map(c => c.amount),
       backgroundColor: props.categories.map(c => c.color),
-      borderWidth: 0, // Niente bordi per far risaltare i colori sul fondo scuro
+      borderWidth: 0,
       hoverOffset: 4
     }
   ]
 }))
 
-// Configurazioni per un look minimale ed elegante
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '85%', // Rende lo spessore della ciambella molto sottile
+  cutout: '85%',
   plugins: {
     legend: {
-      display: false // Nascondiamo la legenda nativa (usiamo quella custom HTML)
+      display: false 
     },
     tooltip: {
-      backgroundColor: '#1e293b', // brand-surface
-      titleColor: '#94a3b8', // brand-textMuted
-      bodyColor: '#f8fafc', // brand-textMain
+      backgroundColor: '#1e293b', 
+      titleColor: '#94a3b8', 
+      bodyColor: '#f8fafc', 
       padding: 12,
       cornerRadius: 12,
       displayColors: false,

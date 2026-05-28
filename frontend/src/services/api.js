@@ -9,4 +9,9 @@ const apiClient = axios.create({
 })
 
 export const api = {
+
+  async getDashboardData() {
+    const response = await apiClient.get('/api/v1/dashboard')
+    return response.data
+  },
 }

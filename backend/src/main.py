@@ -2,7 +2,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.di import Container
-from src.config import app_config
+from src.config.app_config import app_config
 from src.routers import router
 
 

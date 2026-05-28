@@ -1,16 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+
+import { api } from '../services/api'
+import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 import CategoryChart from '../components/CategoryChart.vue'
 import MonthlyChart from '../components/MonthlyChart.vue'
-import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 
-const currentMonth = ref('May 2026')
-const totalSpent = ref(1250.40)
+const currentMonth = ref('')
+const totalSpent = ref(0)
+const cardsSummary = ref([])
+const categorySummary = ref([])
+const monthlyTrend = ref([])
 
-const cardsSummary = ref([
-  { name: 'Main Card', amount: 850.20 },
-  { name: 'Revolut', amount: 400.20 }
-])
+const expandedCategory = ref(null)
 
 const stringToColor = (str) => {
   let hash = 0
@@ -21,47 +23,6 @@ const stringToColor = (str) => {
   return `hsl(${h}, 70%, 65%)`
 }
 
-const rawCategories = ref([
-  { 
-    name: 'Car', 
-    amount: 450.00,
-    subcategories: [
-      { name: 'Fuel', amount: 300.00 },
-      { name: 'Parking', amount: 150.00 }
-    ]
-  }, 
-  { 
-    name: 'Transport', 
-    amount: 150.00,
-    subcategories: [
-      { name: 'Train Tickets', amount: 100.00 },
-      { name: 'Taxi', amount: 50.00 }
-    ]
-  },
-  { 
-    name: 'Dining', 
-    amount: 300.00,
-    subcategories: []
-  },
-  { 
-    name: 'Utilities', 
-    amount: 350.40,
-    subcategories: [
-      { name: 'Internet', amount: 40.00 },
-      { name: 'Electricity', amount: 310.40 }
-    ]
-  }
-])
-
-const categorySummary = computed(() => {
-  return rawCategories.value.map(cat => ({
-    ...cat,
-    color: stringToColor(cat.name)
-  }))
-})
-
-const expandedCategory = ref(null)
-
 const toggleCategory = (categoryName) => {
   if (expandedCategory.value === categoryName) {
     expandedCategory.value = null
@@ -70,20 +31,35 @@ const toggleCategory = (categoryName) => {
   }
 }
 
-const monthlyTrend = ref([
-  { month: 'Jan', amount: 1100.50 },
-  { month: 'Feb', amount: 950.20 },
-  { month: 'Mar', amount: 1300.00 },
-  { month: 'Apr', amount: 1150.80 },
-  { month: 'May', amount: 1250.40 },
-  { month: 'Jun', amount: 0 },
-  { month: 'Jul', amount: 0 },
-  { month: 'Aug', amount: 0 },
-  { month: 'Sep', amount: 0 },
-  { month: 'Oct', amount: 0 },
-  { month: 'Nov', amount: 0 },
-  { month: 'Dec', amount: 0 }
-])
+const loadDashboardData = async () => {
+  try {
+    const [rawDashboardData] = await Promise.all([
+      api.getDashboardData()
+    ])
+
+    currentMonth.value = rawDashboardData.current_month
+    totalSpent.value = rawDashboardData.total_spent
+    cardsSummary.value = rawDashboardData.cards_summary
+    monthlyTrend.value = rawDashboardData.monthly_trends
+
+    const categorySummaryWithColor = computed(() => {
+      return rawDashboardData.categories_summary.map(cat => ({
+        ...cat,
+        color: stringToColor(cat.name)
+      }))
+    })
+    categorySummary.value = categorySummaryWithColor.value
+
+    console.log(categorySummary.value)
+
+  } catch (error) {
+    console.error("Errore fatale nel caricamento del carosello:", error)
+  }
+}
+
+onMounted(() => {
+  loadDashboardData()
+})
 </script>
 
 <template>
@@ -117,9 +93,9 @@ const monthlyTrend = ref([
         <div v-for="cat in categorySummary" :key="cat.name" class="flex flex-col">
           
           <div 
-            @click="cat.subcategories.length > 0 ? toggleCategory(cat.name) : null"
+            @click="cat.sub_categories.length > 0 ? toggleCategory(cat.name) : null"
             class="flex justify-between items-center text-sm py-1"
-            :class="{ 'cursor-pointer': cat.subcategories.length > 0 }"
+            :class="{ 'cursor-pointer': cat.sub_categories.length > 0 }"
           >
             <div class="flex items-center gap-3">
               <span class="w-3 h-3 rounded-full shadow-sm flex-shrink-0" :style="{ backgroundColor: cat.color }"></span>
@@ -129,7 +105,7 @@ const monthlyTrend = ref([
             <div class="flex items-center gap-2">
               <span class="text-brand-textMuted">€ {{ cat.amount.toFixed(2) }}</span>
               <component 
-                v-if="cat.subcategories.length > 0"
+                v-if="cat.sub_categories.length > 0"
                 :is="expandedCategory === cat.name ? ChevronUp : ChevronDown" 
                 class="w-4 h-4 text-brand-textMuted transition-transform" 
               />
@@ -147,7 +123,7 @@ const monthlyTrend = ref([
           >
             <div v-if="expandedCategory === cat.name" class="overflow-hidden">
               <div class="pl-6 ml-1.5 mt-2 flex flex-col gap-3 border-l border-white/10 pb-2">
-                <div v-for="sub in cat.subcategories" :key="sub.name" class="flex justify-between items-center text-xs">
+                <div v-for="sub in cat.sub_categories" :key="sub.name" class="flex justify-between items-center text-xs">
                   <span class="text-brand-textMuted">{{ sub.name }}</span>
                   <span class="text-brand-textMuted">€ {{ sub.amount.toFixed(2) }}</span>
                 </div>
