@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import CategoryChart from '../components/CategoryChart.vue'
+import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 
 const currentMonth = ref('May 2026')
 const totalSpent = ref(1250.40)
@@ -10,19 +11,70 @@ const cardsSummary = ref([
   { name: 'Revolut', amount: 400.20 }
 ])
 
-const categorySummary = ref([
-  { name: 'Groceries', amount: 450.00, color: '#8b5cf6' }, 
-  { name: 'Transport', amount: 150.00, color: '#c084fc' },
-  { name: 'Dining', amount: 300.00, color: '#6366f1' },
-  { name: 'Utilities', amount: 350.40, color: '#3b82f6' }
+const stringToColor = (str) => {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const h = Math.abs(hash) % 360
+  return `hsl(${h}, 70%, 65%)`
+}
+
+const rawCategories = ref([
+  { 
+    name: 'Car', 
+    amount: 450.00,
+    subcategories: [
+      { name: 'Fuel', amount: 300.00 },
+      { name: 'Parking', amount: 150.00 }
+    ]
+  }, 
+  { 
+    name: 'Transport', 
+    amount: 150.00,
+    subcategories: [
+      { name: 'Train Tickets', amount: 100.00 },
+      { name: 'Taxi', amount: 50.00 }
+    ]
+  },
+  { 
+    name: 'Dining', 
+    amount: 300.00,
+    subcategories: []
+  },
+  { 
+    name: 'Utilities', 
+    amount: 350.40,
+    subcategories: [
+      { name: 'Internet', amount: 40.00 },
+      { name: 'Electricity', amount: 310.40 }
+    ]
+  }
 ])
+
+const categorySummary = computed(() => {
+  return rawCategories.value.map(cat => ({
+    ...cat,
+    color: stringToColor(cat.name)
+  }))
+})
+
+const expandedCategory = ref(null)
+
+const toggleCategory = (categoryName) => {
+  if (expandedCategory.value === categoryName) {
+    expandedCategory.value = null
+  } else {
+    expandedCategory.value = categoryName
+  }
+}
 </script>
 
 <template>
-  <div class="py-2 flex flex-col gap-8">
+  <div class="py-2 flex flex-col gap-7">
     
-    <section class="flex flex-col items-center justify-center mt-2">
-      <div class="flex items-center gap-2 mb-2">
+    <section class="flex flex-col items-center justify-center">
+      <div class="flex items-center gap-2">
         <span class="text-xs text-brand-textMuted uppercase tracking-widest font-semibold">{{ currentMonth }}</span>
       </div>
       <h2 class="text-5xl font-extrabold tracking-tighter text-brand-textMain">
@@ -30,32 +82,65 @@ const categorySummary = ref([
       </h2>
     </section>
 
-    <section class="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
+    <section class="flex gap-4 overflow-x-auto hide-scrollbar">
       <div v-for="card in cardsSummary" :key="card.name" 
-           class="min-w-[140px] bg-brand-surface p-5 rounded-app shadow-sm border border-white/5 flex-shrink-0">
-        <div class="text-xs text-brand-textMuted mb-2 font-medium">{{ card.name }}</div>
+           class="min-w-[140px] bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex-shrink-0">
+        <div class="text-xs text-brand-textMuted font-medium">{{ card.name }}</div>
         <div class="text-xl font-bold text-brand-textMain">€ {{ card.amount.toFixed(2) }}</div>
       </div>
     </section>
 
-    <section class="bg-brand-surface p-6 rounded-app shadow-sm border border-white/5 flex flex-col items-center mb-6">
+    <section class="bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex flex-col items-center">
       <h3 class="text-sm font-semibold text-brand-textMuted self-start mb-8">Expenses by Category</h3>
       
       <div class="mb-8 relative flex justify-center items-center">
         <CategoryChart :categories="categorySummary" />
       </div>
 
-      <div class="w-full flex flex-col gap-3">
-        <div v-for="cat in categorySummary" :key="cat.name" class="flex justify-between items-center text-sm">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: cat.color }"></span>
-            <span class="text-brand-textMain font-medium">{{ cat.name }}</span>
+      <div class="w-full flex flex-col gap-4 mt-2">
+        <div v-for="cat in categorySummary" :key="cat.name" class="flex flex-col">
+          
+          <div 
+            @click="cat.subcategories.length > 0 ? toggleCategory(cat.name) : null"
+            class="flex justify-between items-center text-sm py-1"
+            :class="{ 'cursor-pointer': cat.subcategories.length > 0 }"
+          >
+            <div class="flex items-center gap-3">
+              <span class="w-3 h-3 rounded-full shadow-sm flex-shrink-0" :style="{ backgroundColor: cat.color }"></span>
+              <span class="text-brand-textMain font-medium">{{ cat.name }}</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <span class="text-brand-textMuted">€ {{ cat.amount.toFixed(2) }}</span>
+              <component 
+                v-if="cat.subcategories.length > 0"
+                :is="expandedCategory === cat.name ? ChevronUp : ChevronDown" 
+                class="w-4 h-4 text-brand-textMuted transition-transform" 
+              />
+              <div v-else class="w-4 h-4"></div> 
+            </div>
           </div>
-          <span class="text-brand-textMuted">€ {{ cat.amount.toFixed(2) }}</span>
+
+          <transition 
+            enter-active-class="transition-all duration-200 ease-out"
+            leave-active-class="transition-all duration-150 ease-in"
+            enter-from-class="opacity-0 -translate-y-2 max-h-0"
+            enter-to-class="opacity-100 translate-y-0 max-h-40"
+            leave-from-class="opacity-100 translate-y-0 max-h-40"
+            leave-to-class="opacity-0 -translate-y-2 max-h-0"
+          >
+            <div v-if="expandedCategory === cat.name" class="overflow-hidden">
+              <div class="pl-6 ml-1.5 mt-2 flex flex-col gap-3 border-l border-white/10 pb-2">
+                <div v-for="sub in cat.subcategories" :key="sub.name" class="flex justify-between items-center text-xs">
+                  <span class="text-brand-textMuted">{{ sub.name }}</span>
+                  <span class="text-brand-textMuted">€ {{ sub.amount.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
     </section>
-
   </div>
 </template>
 
