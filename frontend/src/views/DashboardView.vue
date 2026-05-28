@@ -159,7 +159,7 @@ const monthlyTrend = ref([
     </section>
 
     <section class="bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex flex-col">
-      <h3 class="text-sm font-semibold text-brand-textMuted">6 Months Trend</h3>
+      <h3 class="text-sm font-semibold text-brand-textMuted">Months Trend</h3>
       <MonthlyChart :data="monthlyTrend" />
     </section>
   </div>
