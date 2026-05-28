@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import CategoryChart from '../components/CategoryChart.vue'
+import MonthlyChart from '../components/MonthlyChart.vue'
 import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 
 const currentMonth = ref('May 2026')
@@ -68,6 +69,21 @@ const toggleCategory = (categoryName) => {
     expandedCategory.value = categoryName
   }
 }
+
+const monthlyTrend = ref([
+  { month: 'Jan', amount: 1100.50 },
+  { month: 'Feb', amount: 950.20 },
+  { month: 'Mar', amount: 1300.00 },
+  { month: 'Apr', amount: 1150.80 },
+  { month: 'May', amount: 1250.40 },
+  { month: 'Jun', amount: 0 },
+  { month: 'Jul', amount: 0 },
+  { month: 'Aug', amount: 0 },
+  { month: 'Sep', amount: 0 },
+  { month: 'Oct', amount: 0 },
+  { month: 'Nov', amount: 0 },
+  { month: 'Dec', amount: 0 }
+])
 </script>
 
 <template>
@@ -140,6 +156,11 @@ const toggleCategory = (categoryName) => {
           </transition>
         </div>
       </div>
+    </section>
+
+    <section class="bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex flex-col">
+      <h3 class="text-sm font-semibold text-brand-textMuted">6 Months Trend</h3>
+      <MonthlyChart :data="monthlyTrend" />
     </section>
   </div>
 </template>
