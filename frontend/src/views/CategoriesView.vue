@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import * as Icons from 'lucide-vue-next'
+import BottomSheet from '../components/BottomSheet.vue'
+import IconPicker from '../components/IconPicker.vue'
 
 const allIconNames = Object.keys(Icons).filter(key => /^[A-Z]/.test(key) && key !== 'createLucideIcon')
 
@@ -91,63 +93,25 @@ const saveCategory = () => {
       </div>
     </div>
 
-    <Teleport to="body">
-      <transition enter-active-class="transition-opacity duration-300" leave-active-class="transition-opacity duration-300" enter-from-class="opacity-0" leave-to-class="opacity-0">
-        <div v-if="isSheetOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" @click="closeSheet"></div>
-      </transition>
-
-      <transition enter-active-class="transition-transform duration-300" leave-active-class="transition-transform duration-300" enter-from-class="translate-y-full" leave-to-class="translate-y-full">
-        <div v-if="isSheetOpen" class="fixed bottom-0 left-0 w-full max-h-[90vh] flex flex-col bg-brand-surface rounded-t-app shadow-app border-t border-white/10 z-[70]">
-          
-          <div class="p-6 pb-2 shrink-0 flex justify-between items-center">
-            <h3 class="text-xl font-bold text-brand-textMain">
-              {{ sheetMode === 'add-primary' ? 'New Category' : sheetMode === 'add-secondary' ? 'New Subcategory' : 'Edit Category' }}
-            </h3>
-            <button @click="closeSheet" class="w-8 h-8 rounded-full bg-brand-background flex items-center justify-center text-brand-textMuted">
-              <Icons.X class="w-5 h-5" />
-            </button>
-          </div>
-
-          <div class="p-6 pt-4 overflow-y-auto flex flex-col gap-5">
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-semibold text-brand-textMuted uppercase tracking-wider">Name</label>
-              <input v-model="formData.name" type="text" placeholder="e.g. Health" 
-                     class="w-full bg-brand-background text-brand-textMain border border-white/10 rounded-xl p-4 focus:outline-none focus:border-brand-primary font-medium placeholder:text-white/20">
-            </div>
-
-            <div v-if="sheetMode !== 'add-secondary'" class="flex flex-col gap-2 mt-2">
-              <div class="flex justify-between items-center mb-1">
-                <label class="text-xs font-semibold text-brand-textMuted uppercase tracking-wider">Select Icon</label>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-brand-textMuted">Selected:</span>
-                  <component :is="Icons[formData.icon] || Icons.Circle" class="w-4 h-4 text-brand-primary" />
-                </div>
-              </div>
-              
-              <div class="relative mb-2">
-                <Icons.Search class="w-4 h-4 absolute left-3 top-3.5 text-brand-textMuted" />
-                <input v-model="iconSearch" type="text" placeholder="Search icons (e.g. heart, game)..." 
-                       class="w-full bg-brand-background text-brand-textMain border border-white/10 rounded-xl p-3 pl-9 text-sm focus:outline-none focus:border-brand-primary">
-              </div>
-
-              <div class="grid grid-cols-6 gap-2 h-48 overflow-y-auto p-1 hide-scrollbar content-start">
-                <button v-for="iconName in displayedIcons" :key="iconName"
-                        @click="formData.icon = iconName"
-                        class="aspect-square rounded-xl flex items-center justify-center border transition-all"
-                        :class="formData.icon === iconName ? 'bg-brand-primary/20 border-brand-primary text-brand-primary' : 'bg-brand-background border-white/5 text-brand-textMuted hover:border-white/20'">
-                  <component :is="Icons[iconName]" class="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <button @click="saveCategory" class="mt-4 w-full bg-brand-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-brand-secondary shrink-0">
-              Save Category
-            </button>
-          </div>
-
+    <BottomSheet 
+    :isOpen="isSheetOpen" 
+    :title="sheetMode === 'add-primary' ? 'New Category' : 'Edit Category'"
+    @close="closeSheet"
+    >
+      <div class="flex flex-col gap-5">
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold text-brand-textMuted uppercase tracking-wider">Name</label>
+          <input v-model="formData.name" type="text" placeholder="e.g. Health" 
+                  class="w-full bg-brand-background text-brand-textMain border border-white/10 rounded-xl p-4 focus:outline-none focus:border-brand-primary font-medium placeholder:text-white/20">
         </div>
-      </transition>
-    </Teleport>
+
+        <IconPicker v-if="sheetMode !== 'add-secondary'" v-model="formData.icon" />
+
+        <button @click="saveCategory" class="mt-4 w-full bg-brand-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-brand-secondary shrink-0">
+          Save Category
+        </button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
