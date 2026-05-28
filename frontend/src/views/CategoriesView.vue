@@ -52,10 +52,10 @@ const saveCategory = () => {
       </button>
     </header>
 
-    <div class="flex flex-col gap-3 pb-24">
+    <div class="flex flex-col gap-2 pb-24">
       <div v-for="cat in categories" :key="cat.id" class="bg-brand-surface rounded-app-sm shadow-sm border border-white/5 overflow-hidden">
         
-        <div @click="toggleAccordion(cat.id)" class="p-4 flex justify-between items-center cursor-pointer">
+        <div @click="toggleAccordion(cat.id)" class="py-2 px-4 flex justify-between items-center cursor-pointer">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-full bg-brand-background flex items-center justify-center">
               <component :is="Icons[cat.icon] || Icons.Circle" class="w-5 h-5 text-brand-primary" />
@@ -66,21 +66,28 @@ const saveCategory = () => {
             <button @click.stop="openSheet('edit-primary', null, cat)" class="p-2 text-brand-textMuted">
               <Icons.Edit2 class="w-4 h-4" />
             </button>
-            <component :is="expandedCatId === cat.id ? Icons.ChevronUp : Icons.ChevronDown" class="w-5 h-5 text-brand-textMuted" />
+            <component :is="expandedCatId === cat.id ? Icons.ChevronUp : Icons.ChevronDown" class="w-5 h-5 text-brand-textMuted transition-transform" />
           </div>
         </div>
 
-        <transition enter-active-class="transition-all duration-200" leave-active-class="transition-all duration-150" enter-from-class="max-h-0 opacity-0" leave-to-class="max-h-0 opacity-0">
-          <div v-if="expandedCatId === cat.id" class="bg-brand-background/30 border-t border-white/5 p-4 flex flex-col gap-2 overflow-hidden">
-            <div v-for="sub in cat.subs" :key="sub.id" class="flex justify-between items-center p-2">
-              <span class="text-brand-textMuted font-medium pl-2 border-l-2 border-brand-primary/50">{{ sub.name }}</span>
-              <button class="p-1.5 text-brand-textMuted hover:text-red-400"><Icons.Trash2 class="w-4 h-4" /></button>
+        <div 
+          class="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out"
+          :class="expandedCatId === cat.id ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+        >
+          <div class="overflow-hidden">
+            <div class="bg-brand-background/30 border-t border-white/5 py-2 px-3 flex flex-col gap-2">
+              <div v-for="sub in cat.subs" :key="sub.id" class="flex justify-between items-center p-2">
+                <span class="text-brand-textMuted font-medium pl-2 border-l-2 border-brand-primary/50">{{ sub.name }}</span>
+                <button class="p-1.5 text-brand-textMuted hover:text-red-400">
+                  <Icons.Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+              <button @click="openSheet('add-secondary', cat.id)" class="flex items-center gap-2 text-sm text-brand-primary font-medium p-2 self-start">
+                <Icons.Plus class="w-4 h-4" /> Add Subcategory
+              </button>
             </div>
-            <button @click="openSheet('add-secondary', cat.id)" class="mt-2 flex items-center gap-2 text-sm text-brand-primary font-medium p-2 self-start">
-              <Icons.Plus class="w-4 h-4" /> Add Subcategory
-            </button>
           </div>
-        </transition>
+        </div>
       </div>
     </div>
 
