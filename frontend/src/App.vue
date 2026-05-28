@@ -15,24 +15,19 @@ const route = useRoute()
       <RouterView />
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-brand-surface shadow-app rounded-t-app z-50">
+    <nav class="fixed bottom-6 left-6 right-6 bg-brand-surface/70 backdrop-blur-xl border border-white/10 shadow-app rounded-[24px] z-50">
       <div class="flex justify-around items-center p-4">
-        
         <RouterLink to="/" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <Home :size="24" :stroke-width="route.path === '/' ? 2.5 : 2" />
-          <span class="text-[10px] font-semibold tracking-wide uppercase">Home</span>
+          <Home :size="20" :stroke-width="route.path === '/' ? 2.5 : 2" />
         </RouterLink>
 
         <RouterLink to="/transactions" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/transactions' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <List :size="24" :stroke-width="route.path === '/transactions' ? 2.5 : 2" />
-          <span class="text-[10px] font-semibold tracking-wide uppercase">Spese</span>
+          <List :size="20" :stroke-width="route.path === '/transactions' ? 2.5 : 2" />
         </RouterLink>
 
         <RouterLink to="/categories" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/categories' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <Settings :size="24" :stroke-width="route.path === '/categories' ? 2.5 : 2" />
-          <span class="text-[10px] font-semibold tracking-wide uppercase">Impostazioni</span>
+          <Settings :size="20" :stroke-width="route.path === '/categories' ? 2.5 : 2" />
         </RouterLink>
-
       </div>
     </nav>
   </div>
