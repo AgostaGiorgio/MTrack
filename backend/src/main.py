@@ -3,12 +3,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.di import Container
 from src.config import app_config
+from src.routers import router
 
 
 logger = logging.getLogger(__name__)
 
 container = Container()
-container.wire(modules=[])
+container.wire(modules=[router])
 
 app = FastAPI(title="MTrack API", version="2.0.0")
 
@@ -20,3 +21,4 @@ app.add_middleware(
     allow_headers=app_config.cors_allow_headers,
 )
 
+app.include_router(router.api_router, prefix="/api/v1")
