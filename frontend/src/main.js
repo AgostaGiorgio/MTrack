@@ -1,4 +1,4 @@
-import './assets/main.css' // <-- Aggiunto per caricare Tailwind
+import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
