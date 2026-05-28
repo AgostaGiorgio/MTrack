@@ -1,43 +1,60 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+
+import { api } from '../services/api'
 import * as Icons from 'lucide-vue-next'
 import BottomSheet from '../components/BottomSheet.vue'
 import IconPicker from '../components/IconPicker.vue'
 
-const allIconNames = Object.keys(Icons).filter(key => /^[A-Z]/.test(key) && key !== 'createLucideIcon')
 
-const categories = ref([
-  { id: '1', name: 'Car', icon: 'Car', type: 'primary', subs: [{ id: '1a', name: 'Fuel', type: 'secondary' }] },
-  { id: '2', name: 'Utilities', icon: 'Zap', type: 'primary', subs: [{ id: '2a', name: 'Internet', type: 'secondary' }] }
-])
+const categories = ref([])
 
 const expandedCatId = ref(null)
-const toggleAccordion = (id) => expandedCatId.value = expandedCatId.value === id ? null : id
-
 const isSheetOpen = ref(false)
 const sheetMode = ref('add-primary')
-const formData = ref({ id: null, name: '', icon: 'CircleDollarSign', parentId: null })
+const formData = ref({ id: null, name: '', icon: 'Circle', parentId: null })
+const iconSearch = ref('')
+
+const toggleAccordion = (id) => expandedCatId.value = expandedCatId.value === id ? null : id
 
 const openSheet = (mode, parentId = null, existingData = null) => {
   sheetMode.value = mode
   iconSearch.value = ''
   if (existingData) formData.value = { ...existingData }
-  else formData.value = { id: null, name: '', icon: 'CircleDollarSign', parentId }
+  else formData.value = { id: null, name: '', icon: 'Circle', parentId }
+  if (formData.value.icon === null) formData.value.icon = 'Circle'
   isSheetOpen.value = true
 }
 const closeSheet = () => isSheetOpen.value = false
 
-const iconSearch = ref('')
+const loadCategories = async () => {
+  try {
+    const [rawCategories] = await Promise.all([
+      api.getCategories()
+    ])
+    categories.value = rawCategories
+  } catch (error) {
+    console.error("Errore fatale nel caricamento del carosello:", error)
+  }
+}
 
-const displayedIcons = computed(() => {
-  const query = iconSearch.value.toLowerCase()
-  if (!query) return allIconNames.slice(0, 60)
-  return allIconNames.filter(name => name.toLowerCase().includes(query)).slice(0, 60)
+onMounted(() => {
+  loadCategories()
 })
 
-const saveCategory = () => {
-  console.log('Salvataggio nel DB...', formData.value)
-  closeSheet()
+const saveCategory = async () => {
+  try {
+    if (formData.value.id) {
+      await api.updateCategory(formData.value)
+    } else{
+      await api.addCategory(formData.value)
+    }
+    await loadCategories()
+  } catch (error) {
+    console.error("Errore fatale nel salvataggio della categoria:", error)
+  } finally {
+    closeSheet()
+  }
 }
 </script>
 
@@ -78,7 +95,7 @@ const saveCategory = () => {
         >
           <div class="overflow-hidden">
             <div class="bg-brand-background/30 border-t border-white/5 py-2 px-3 flex flex-col gap-2">
-              <div v-for="sub in cat.subs" :key="sub.id" class="flex justify-between items-center p-2">
+              <div v-for="sub in cat.sub_categories" :key="sub.id" class="flex justify-between items-center p-2">
                 <span class="text-brand-textMuted font-medium pl-2 border-l-2 border-brand-primary/50">{{ sub.name }}</span>
                 <button class="p-1.5 text-brand-textMuted hover:text-red-400">
                   <Icons.Trash2 class="w-4 h-4" />

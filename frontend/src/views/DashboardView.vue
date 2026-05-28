@@ -49,9 +49,6 @@ const loadDashboardData = async () => {
       }))
     })
     categorySummary.value = categorySummaryWithColor.value
-
-    console.log(categorySummary.value)
-
   } catch (error) {
     console.error("Errore fatale nel caricamento del carosello:", error)
   }

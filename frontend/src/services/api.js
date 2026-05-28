@@ -14,4 +14,19 @@ export const api = {
     const response = await apiClient.get('/api/v1/dashboard')
     return response.data
   },
+
+  async getCategories() {
+    const response = await apiClient.get('/api/v1/categories')
+    return response.data
+  },
+
+  async addCategory(categoryData) {
+    const response = await apiClient.post('/api/v1/categories', categoryData)
+    return response.data
+  },
+
+  async updateCategory(categoryData) {
+    const response = await apiClient.put(`/api/v1/categories/${categoryData.id}`, categoryData)
+    return response.data
+  }
 }

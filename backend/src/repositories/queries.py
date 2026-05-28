@@ -82,3 +82,44 @@ GET_MONTHLY_TRENDS = text("""
     GROUP BY 1
     ORDER BY MIN(date_trunc('month', created_at - interval '2 days'));
 """)
+
+GET_CATEGORIES = text("""
+    SELECT id, name, icon 
+    FROM public.categories
+    WHERE type = 'primary'
+""")
+
+GET_CATEGORIES_MAPPING = text("""
+    SELECT
+        primary_id as id,
+        json_agg(
+            json_build_object(
+                'id', c.id,
+                'name', c.name,
+                'icon', c.icon
+            )
+            ORDER BY c.id
+        ) AS secondary_categories
+    FROM category_mappings
+    LEFT JOIN categories c ON secondary_id = c.id
+    GROUP BY primary_id
+    ORDER BY primary_id;
+""")
+
+CREATE_CATEGORY = text("""
+    INSERT INTO categories (name, icon, type)
+    VALUES (:name, :icon, :type)
+    RETURNING id, name, icon
+""")
+
+CREATE_CATEGORY_MAPPING = text("""
+    INSERT INTO category_mappings (primary_id, secondary_id)
+    VALUES (:primary_id, :secondary_id)
+""")
+
+UPDATE_CATEGORY = text("""
+    UPDATE categories
+    SET name = :name, icon = :icon
+    WHERE id = :id
+    RETURNING id, name, icon
+""")
