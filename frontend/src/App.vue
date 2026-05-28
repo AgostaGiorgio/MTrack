@@ -1,6 +1,7 @@
 <script setup>
 import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { Home, List, Settings } from 'lucide-vue-next'
+import AppHeader from './components/AppHeader.vue'
 
 const route = useRoute()
 </script>
@@ -8,9 +9,7 @@ const route = useRoute()
 <template>
   <div class="min-h-screen bg-brand-background text-brand-textMain font-sans pb-24 selection:bg-brand-primary selection:text-white">
     
-    <header class="p-6">
-      <h1 class="text-app-title text-brand-primary tracking-tight">MTrack</h1>
-    </header>
+    <AppHeader />
 
     <main class="px-4">
       <RouterView />
