@@ -123,3 +123,32 @@ UPDATE_CATEGORY = text("""
     WHERE id = :id
     RETURNING id, name, icon
 """)
+
+GET_TRANSACTIONS = text("""
+    SELECT id, amount, created_at as date, extract_merchant_name(description) as description, card, primary_category_id as primary_category, secondary_category_id as secondary_category
+    FROM transactions
+    WHERE created_at >= (
+        CASE
+        WHEN EXTRACT(DAY FROM current_date) >= 3
+            THEN date_trunc('month', current_date) + interval '2 days'
+        ELSE
+            date_trunc('month', current_date) - interval '1 month' + interval '2 days'
+        END
+    )
+    AND created_at < (
+        CASE
+        WHEN EXTRACT(DAY FROM current_date) >= 3
+            THEN date_trunc('month', current_date) + interval '2 days'
+        ELSE
+            date_trunc('month', current_date) - interval '1 month' + interval '2 days'
+        END
+    ) + interval '1 month'
+    ORDER BY created_at DESC;
+""")
+
+UPDATE_TRANSACTION_CATEGORIES = text("""
+    UPDATE transactions
+    SET primary_category_id = :primary_category_id, secondary_category_id = :secondary_category_id
+    WHERE id = :transaction_id
+    RETURNING id, amount, created_at as date, extract_merchant_name(description) as description, card, primary_category_id as primary_category, secondary_category_id as secondary_category
+""")

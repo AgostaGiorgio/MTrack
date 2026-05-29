@@ -39,7 +39,7 @@ const chartOptions = {
       cornerRadius: 12,
       displayColors: false,
       callbacks: {
-        label: (context) => ` € ${context.raw.toFixed(2)}`
+        label: (context) => ` Đ ${context.raw.toFixed(2)}`
       }
     }
   },

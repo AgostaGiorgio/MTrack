@@ -67,7 +67,7 @@ onMounted(() => {
         <span class="text-xs text-brand-textMuted uppercase tracking-widest font-semibold">{{ currentMonth }}</span>
       </div>
       <h2 class="text-5xl font-extrabold tracking-tighter text-brand-textMain">
-        € {{ totalSpent.toFixed(2) }}
+        Đ {{ totalSpent.toFixed(2) }}
       </h2>
     </section>
 
@@ -75,7 +75,7 @@ onMounted(() => {
       <div v-for="card in cardsSummary" :key="card.name" 
            class="min-w-[140px] bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex-shrink-0">
         <div class="text-xs text-brand-textMuted font-medium">{{ card.name }}</div>
-        <div class="text-xl font-bold text-brand-textMain">€ {{ card.amount.toFixed(2) }}</div>
+        <div class="text-xl font-bold text-brand-textMain">Đ {{ card.amount.toFixed(2) }}</div>
       </div>
     </section>
 
@@ -100,7 +100,7 @@ onMounted(() => {
             </div>
             
             <div class="flex items-center gap-2">
-              <span class="text-brand-textMuted">€ {{ cat.amount.toFixed(2) }}</span>
+              <span class="text-brand-textMuted">Đ {{ cat.amount.toFixed(2) }}</span>
               <component 
                 v-if="cat.sub_categories.length > 0"
                 :is="expandedCategory === cat.name ? ChevronUp : ChevronDown" 
@@ -122,7 +122,7 @@ onMounted(() => {
               <div class="pl-6 ml-1.5 mt-2 flex flex-col gap-3 border-l border-white/10 pb-2">
                 <div v-for="sub in cat.sub_categories" :key="sub.name" class="flex justify-between items-center text-xs">
                   <span class="text-brand-textMuted">{{ sub.name }}</span>
-                  <span class="text-brand-textMuted">€ {{ sub.amount.toFixed(2) }}</span>
+                  <span class="text-brand-textMuted">Đ {{ sub.amount.toFixed(2) }}</span>
                 </div>
               </div>
             </div>

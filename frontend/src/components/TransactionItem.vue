@@ -33,7 +33,7 @@ const formattedDate = computed(() => {
         </div>
       </div>
       <div class="text-brand-textMain font-extrabold">
-        € {{ transaction.amount.toFixed(2) }}
+        Đ {{ transaction.amount.toFixed(2) }}
       </div>
     </div>
 
@@ -41,11 +41,11 @@ const formattedDate = computed(() => {
       <button @click="$emit('edit', transaction)" 
               class="w-full flex items-center justify-between bg-brand-background/50 hover:bg-brand-background/80 transition-colors p-2.5 rounded-lg border border-white/5">
         <div class="flex items-center gap-2 text-sm">
-          <span class="font-medium" :class="transaction.primary ? 'text-brand-primary' : 'text-brand-textMuted'">
-            {{ transaction.primary || 'Uncategorized' }}
+          <span class="font-medium" :class="transaction.primary_category ? 'text-brand-primary' : 'text-brand-textMuted'">
+            {{ transaction.primary_category?.name || 'Uncategorized' }}
           </span>
-          <span v-if="transaction.secondary" class="text-brand-textMuted text-xs">/</span>
-          <span v-if="transaction.secondary" class="text-brand-textMuted text-xs font-medium">{{ transaction.secondary }}</span>
+          <span v-if="transaction.secondary_category" class="text-brand-textMuted text-xs">/</span>
+          <span v-if="transaction.secondary_category" class="text-brand-textMuted text-xs font-medium">{{ transaction.secondary_category.name }}</span>
         </div>
         <div class="flex items-center gap-2 text-xs text-brand-textMuted">
           <span>Edit</span>

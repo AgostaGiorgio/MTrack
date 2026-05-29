@@ -28,5 +28,18 @@ export const api = {
   async updateCategory(categoryData) {
     const response = await apiClient.put(`/api/v1/categories/${categoryData.id}`, categoryData)
     return response.data
+  },
+
+  async getTransactions() {
+    const response = await apiClient.get('/api/v1/transactions')
+    return response.data
+  },
+
+  async updateTransactionCategories(transactionId, primaryCategoryId, secondaryCategoryId) {
+    const response = await apiClient.put(`/api/v1/transactions/${transactionId}`, {
+      primary_category_id: primaryCategoryId,
+      secondary_category_id: secondaryCategoryId
+    })
+    return response.data
   }
 }
