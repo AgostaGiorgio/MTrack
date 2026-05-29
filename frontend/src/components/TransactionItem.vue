@@ -17,13 +17,13 @@ const formattedDate = computed(() => {
 <template>
   <div class="bg-brand-surface p-4 rounded-app-sm shadow-sm border border-white/5 flex flex-col gap-3">
     
-    <div class="flex justify-between items-start">
+    <div class="flex justify-between items-center">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-brand-background flex items-center justify-center flex-shrink-0">
           <component :is="iconComponent" class="w-5 h-5 text-brand-primary" />
         </div>
         <div>
-          <div class="text-brand-textMain font-bold text-base leading-tight">{{ transaction.description }}</div>
+          <div class="text-brand-textMain font-bold text-sm leading-tight">{{ transaction.description }}</div>
           <div class="flex items-center gap-1 text-xs text-brand-textMuted mt-1">
             <Icons.CreditCard class="w-3 h-3" />
             <span>{{ transaction.card }}</span>
@@ -32,7 +32,7 @@ const formattedDate = computed(() => {
           </div>
         </div>
       </div>
-      <div class="text-brand-textMain font-extrabold">
+      <div class="text-brand-textMain font-extrabold whitespace-nowrap">
         Đ {{ transaction.amount.toFixed(2) }}
       </div>
     </div>
