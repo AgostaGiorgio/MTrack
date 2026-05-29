@@ -72,3 +72,14 @@ class CategoriesRepository:
                 logger.error(f"Error updating category", exc_info=e)
                 await session.rollback()
         return category
+    
+    async def unlink_sub_category(self, category_id: UUID, sub_category_id: UUID):
+        logger.debug(f"Executing unlink sub-category query for category id: {category_id} and sub-category id: {sub_category_id}...")
+        async with self.__postgres_client.async_session() as session:
+            try:
+                await session.execute(q.UNLINK_SUB_CATEGORY, {"primary_id": str(category_id), "secondary_id": str(sub_category_id)})
+                logger.debug(f"Sub-category {sub_category_id} unlinked from category {category_id}")
+                await session.commit()
+            except Exception as e:
+                logger.error(f"Error unlinking sub-category", exc_info=e)
+                await session.rollback()

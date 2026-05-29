@@ -56,6 +56,17 @@ const saveCategory = async () => {
     closeSheet()
   }
 }
+
+const deleteSubcategory = async (categoryId, subcategoryId) => {
+  if (window.confirm('Are you sure you want to delete this subcategory?')) {
+    try {
+      await api.unlinkSubCategory(categoryId, subcategoryId)
+      await loadCategories()
+    } catch (error) {
+      console.error("Errore fatale nell'eliminazione della sottocategoria:", error)
+    }
+  }
+}
 </script>
 
 <template>
@@ -97,7 +108,7 @@ const saveCategory = async () => {
             <div class="bg-brand-background/30 border-t border-white/5 py-2 px-3 flex flex-col gap-2">
               <div v-for="sub in cat.sub_categories" :key="sub.id" class="flex justify-between items-center p-2">
                 <span class="text-brand-textMuted font-medium pl-2 border-l-2 border-brand-primary/50">{{ sub.name }}</span>
-                <button class="p-1.5 text-brand-textMuted hover:text-red-400">
+                <button @click="deleteSubcategory(cat.id, sub.id)" class="p-1.5 text-brand-textMuted hover:text-red-400">
                   <Icons.Trash2 class="w-4 h-4" />
                 </button>
               </div>

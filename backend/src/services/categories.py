@@ -20,3 +20,7 @@ class CategoriesService:
     async def update_category(self, category_id: UUID, name: str, icon: str) -> Category:
         logger.info(f"Updating category with id: {category_id} to have name: {name} and icon: {icon}")
         return await self.__categories_repository.update_category(category_id=category_id, name=name, icon=icon)
+    
+    async def unlink_sub_category(self, category_id: UUID, sub_category_id: UUID):
+        logger.info(f"Unlinking sub-category {sub_category_id} from category {category_id}")
+        await self.__categories_repository.unlink_sub_category(category_id=category_id, sub_category_id=sub_category_id)

@@ -124,6 +124,11 @@ UPDATE_CATEGORY = text("""
     RETURNING id, name, icon
 """)
 
+UNLINK_SUB_CATEGORY = text("""
+    DELETE FROM category_mappings
+    WHERE primary_id = :primary_id AND secondary_id = :secondary_id
+""")
+
 GET_TRANSACTIONS = text("""
     SELECT id, amount, created_at as date, extract_merchant_name(description) as description, card, primary_category_id as primary_category, secondary_category_id as secondary_category
     FROM transactions
