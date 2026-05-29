@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Expense Report</title>
+    <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: sans-serif; -webkit-print-color-adjust: exact; color: #333; }
+        h1, h2, h3 { color: #1f2937; }
+        .page-break { page-break-after: always; }
+        
+        /* Layout */
+        .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1f2937; padding-bottom: 10px; margin-bottom: 25px; }
+        .kpi-grid { margin-bottom: 25px; }
+        .kpi-box { width: 22%; float: left; padding: 10px; border-radius: 5px; box-sizing: border-box; }
+        .kpi-box:not(:last-child) { margin-right: 2.66%; }
+        .kpi-box .label { font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold; }
+        .kpi-box .value { font-size: 20px; font-weight: bold; }
+        
+        .chart-container { margin-bottom: 25px; border: 1px solid #eee; padding: 10px; border-radius: 5px; }
+        .chart-container h2 { margin-top: 0; padding-left: 8px; border-left: 4px solid #1f2937; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        th { text-align: left; background-color: #1f2937; color: white; padding: 8px; font-size: 12px; }
+        td { padding: 8px; border-bottom: 1px solid #eee; font-size: 13px; }
+        tbody tr:nth-child(even) { background-color: #f9f9f9; }
+        .text-right { text-align: right; }
+        .font-mono { font-family: monospace; }
+        .font-bold { font-weight: bold; }
+        .text-sm { font-size: 13px; }
+        .text-xs { font-size: 11px; }
+        
+        /* Progress Bar */
+        .progress-bar { display: flex; align-items: center; }
+        .progress-track { width: 100%; background: #eee; border-radius: 5px; height: 10px; }
+        .progress-fill { background: #2563eb; height: 10px; border-radius: 5px; }
+        
+    </style>
+</head>
+<body>
+    <!-- PAGE 1 -->
+    <div class="header">
+        <div>
+            <h1 style="font-size: 28px; font-weight: bold; text-transform: uppercase; margin: 0;">Financial Report</h1>
+            <p style="font-size: 14px; color: #555; margin: 5px 0 0 0;">Period: {{ date_from }} – {{ date_to }}</p>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 11px; color: #777; text-transform: uppercase;">Report Date</div>
+            <div style="font-weight: bold; font-size: 13px;">{{ generation_date }}</div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-box" style="background: #f9fafb; border: 1px solid #ddd;">
+            <div class="label">Total Gross</div>
+            <div class="value" style="color: #1f2937;">{{ total_gross }}</div>
+        </div>
+        <div class="kpi-box" style="background: #eff6ff; border: 1px solid #bfdbfe;">
+            <div class="label" style="color: #1d4ed8;">Total Net</div>
+            <div class="value" style="color: #1e3a8a;">{{ total_net }}</div>
+        </div>
+        <div class="kpi-box" style="background: #f9fafb; border: 1px solid #ddd;">
+            <div class="label">Monthly Avg (Net)</div>
+            <div class="value" style="color: #1f2937;">{{ monthly_avg }}</div>
+        </div>
+        <div class="kpi-box" style="background: #f9fafb; border: 1px solid #ddd;">
+            <div class="label">Transactions</div>
+            <div class="value" style="color: #1f2937;">{{ monthly_transactions }}</div>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-container">
+        <h2>Monthly Gross Spend Trend</h2>
+        <img src="data:image/png;base64,{{ chart_trend_b64 }}" style="width: 100%;">
+    </div>
+    <div class="chart-container" style="text-align: center;">
+        <h2>Category Distribution</h2>
+        <img src="data:image/png;base64,{{ chart_category_b64 }}" style="width: 75%; height: auto;">
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- PAGE 2 -->
+    <h3 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-top: 25px; margin-bottom: 10px;">Payment Method Analysis</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Instrument</th>
+                <th style="width: 50%">Usage Volume</th>
+                <th class="text-right">Total Amount (Gross)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pm in payment_methods %}
+            <tr>
+                <td class="font-medium text-sm">{{ pm.name }}</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: {{ pm.percent }}%;"></div>
+                        </div>
+                        <span style="font-size: 12px; color: #555; margin-left: 8px;">{{ pm.percent }}%</span>
+                    </div>
+                </td>
+                <td class="text-right font-mono font-bold text-sm">{{ pm.amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">Top 10 Transactions (By Gross Value)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%">Date</th>
+                <th>Description</th>
+                <th style="width: 20%">Category</th>
+                <th class="text-right" style="width: 15%">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in top_expenses %}
+            <tr>
+                <td class="font-mono text-xs text-gray-600">{{ tx.date_str }}</td>
+                <td class="font-medium text-sm">{{ tx.desc }}</td>
+                <td class="text-xs uppercase"><span style="background: #eee; padding: 2px 6px; border-radius: 4px;">{{ tx.cat }}</span></td>
+                <td class="text-right font-mono font-bold text-sm">{{ tx.amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- *** NEW TABLE *** -->
+    <h3 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">Top 5 Category Analysis</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th class="text-right">Total Spend</th>
+                <th class="text-right">Transaction Count</th>
+                <th class="text-right">Average Spend</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat in top_5_categories %}
+            <tr>
+                <td class="font-medium text-sm">{{ cat.name }}</td>
+                <td class="text-right font-mono font-bold text-sm">{{ cat.total_formatted }}</td>
+                <td class="text-right font-mono text-sm">{{ cat.count }}</td>
+                <td class="text-right font-mono font-bold text-sm">{{ cat.average_formatted }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- *** END NEW TABLE *** -->
+
+</body>
+</html>
