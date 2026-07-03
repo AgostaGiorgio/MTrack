@@ -12,7 +12,7 @@ if app_config.orbit_api_url:
     orbit_client = OrbitClient(
         orbit_api_url=app_config.orbit_api_url,
         name="MTrack",
-        version="2.1.0",
+        version="2.1.1",
         description="Expenses tracker",
         app_url="https://mtrack.agogi.dev"
     )
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 container = Container()
 container.wire(modules=[transactions, dashboard, categories])
 
-app = FastAPI(lifespan=lifespan, title="MTrack API", version="2.1.0")
+app = FastAPI(lifespan=lifespan, title="MTrack API", version="2.1.1")
 
 app.add_middleware(
     CORSMiddleware,
