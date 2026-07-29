@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mtrack"
-version = "2.0.0"
+version = "2.1.1"
 description = "Piattaforma per tenere traccia delle spese personali"
 authors = ["Giorgio Agosta <agogi.dev@gmail.com>"]
 packages = [

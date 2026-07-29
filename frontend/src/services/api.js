@@ -5,6 +5,9 @@ const apiClient = axios.create({
   timeout: 10000, 
   headers: {
     'Content-Type': 'application/json'
+  },
+  paramsSerializer: {
+    indexes: null
   }
 })
 
@@ -34,8 +37,13 @@ export const api = {
     await apiClient.put(`/api/v1/categories/${categoryId}/sub/${subCategoryId}/unlink`)
   },
 
-  async getTransactions() {
-    const response = await apiClient.get('/api/v1/transactions')
+  async getTransactions(params = {}) {
+    const response = await apiClient.get('/api/v1/transactions', { params })
+    return response.data
+  },
+
+  async getStatistics(categories) {
+    const response = await apiClient.get('/api/v1/statistics', { params: { categories } })
     return response.data
   },
 
