@@ -116,7 +116,7 @@ const saveCategories = async () => {
     await api.updateTransactionCategories(editingTx.value.id, editingTx.value.primary_category.id, editingTx.value.secondary_category?.id)
     await loadTransactionsData()
   } catch(error){
-    console.error("Errore fatale nell'aggiornamento delle categorie della transazione:", error)
+    console.error("Failed to update transaction categories:", error)
   } finally { 
     closeSheet()
   }
@@ -140,7 +140,7 @@ const loadTransactionsData = async () => {
     categories.value = rawCategoriesData
     selectedCategoryId.value = null
   } catch (error) {
-    console.error("Errore fatale nel caricamento delle transazioni o delle categorie:", error)
+    console.error("Failed to load transactions or categories:", error)
   }
 }
 
