@@ -34,3 +34,4 @@
 - Routers use `@inject` decorator + `Depends(Provide[Container.xxx_service])` for DI
 - Frontend category colors are deterministic from name hash (`stringToColor` in `DashboardView.vue`)
 - No generated code, no migrations, no codegen — schema is managed externally via the n8n ingestion pipeline
+- Single source of version inside app.version file in the root of the project
