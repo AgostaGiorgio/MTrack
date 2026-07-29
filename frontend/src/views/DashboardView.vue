@@ -50,7 +50,7 @@ const loadDashboardData = async () => {
     })
     categorySummary.value = categorySummaryWithColor.value
   } catch (error) {
-    console.error("Errore fatale nel caricamento del carosello:", error)
+    console.error("Failed to load dashboard data:", error)
   }
 }
 

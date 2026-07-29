@@ -34,7 +34,7 @@ const loadCategories = async () => {
     ])
     categories.value = rawCategories
   } catch (error) {
-    console.error("Errore fatale nel caricamento del carosello:", error)
+    console.error("Failed to load categories:", error)
   }
 }
 
@@ -51,7 +51,7 @@ const saveCategory = async () => {
     }
     await loadCategories()
   } catch (error) {
-    console.error("Errore fatale nel salvataggio della categoria:", error)
+    console.error("Failed to save category:", error)
   } finally {
     closeSheet()
   }
@@ -63,7 +63,7 @@ const deleteSubcategory = async (categoryId, subcategoryId) => {
       await api.unlinkSubCategory(categoryId, subcategoryId)
       await loadCategories()
     } catch (error) {
-      console.error("Errore fatale nell'eliminazione della sottocategoria:", error)
+      console.error("Failed to unlink subcategory:", error)
     }
   }
 }

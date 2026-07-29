@@ -8,6 +8,71 @@ import BottomSheet from '../components/BottomSheet.vue'
 
 const transactions = ref([])
 const categories = ref([])
+const selectedCategoryId = ref(null)
+
+const getCurrentMtrackMonth = () => {
+  const now = new Date()
+  const day = now.getDate()
+  if (day < 3) {
+    const prev = new Date(now.getFullYear(), now.getMonth(), 0)
+    return { year: prev.getFullYear(), month: prev.getMonth() + 1 }
+  }
+  return { year: now.getFullYear(), month: now.getMonth() + 1 }
+}
+
+const currentMtrack = getCurrentMtrackMonth()
+const viewYear = ref(currentMtrack.year)
+const viewMonth = ref(currentMtrack.month)
+
+const viewMonthLabel = computed(() => {
+  const date = new Date(viewYear.value, viewMonth.value - 1)
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
+
+const isCurrentMonth = computed(() =>
+  viewYear.value === currentMtrack.year && viewMonth.value === currentMtrack.month
+)
+
+const goPrevMonth = () => {
+  if (viewMonth.value === 1) {
+    viewMonth.value = 12
+    viewYear.value -= 1
+  } else {
+    viewMonth.value -= 1
+  }
+  loadTransactionsData()
+}
+
+const goNextMonth = () => {
+  if (isCurrentMonth.value) return
+  if (viewMonth.value === 12) {
+    viewMonth.value = 1
+    viewYear.value += 1
+  } else {
+    viewMonth.value += 1
+  }
+  loadTransactionsData()
+}
+
+const filteredTransactions = computed(() => {
+  if (!selectedCategoryId.value) return transactions.value
+  return transactions.value.filter(tx => {
+    const catId = tx.primary_category?.id
+    return catId && String(catId) === String(selectedCategoryId.value)
+  })
+})
+
+const filterCategories = computed(() => {
+  const seen = new Set()
+  const cats = []
+  for (const tx of transactions.value) {
+    if (tx.primary_category && !seen.has(tx.primary_category.id)) {
+      seen.add(tx.primary_category.id)
+      cats.push(tx.primary_category)
+    }
+  }
+  return cats
+})
 
 const editingTx = ref(null)
 const editingTxPrimaryId = ref(null)
@@ -51,7 +116,7 @@ const saveCategories = async () => {
     await api.updateTransactionCategories(editingTx.value.id, editingTx.value.primary_category.id, editingTx.value.secondary_category?.id)
     await loadTransactionsData()
   } catch(error){
-    console.error("Errore fatale nell'aggiornamento delle categorie della transazione:", error)
+    console.error("Failed to update transaction categories:", error)
   } finally { 
     closeSheet()
   }
@@ -63,15 +128,19 @@ const handlePrimaryChange = () => {
 
 const loadTransactionsData = async () => {
   try {
+    const params = {}
+    if (viewYear.value) params.year = viewYear.value
+    if (viewMonth.value) params.month = viewMonth.value
     const [rawTransactionsData, rawCategoriesData] = await Promise.all([
-      api.getTransactions(),
+      api.getTransactions(params),
       api.getCategories()
     ])
 
     transactions.value = rawTransactionsData
     categories.value = rawCategoriesData
+    selectedCategoryId.value = null
   } catch (error) {
-    console.error("Errore fatale nel caricamento delle transazioni o delle categorie:", error)
+    console.error("Failed to load transactions or categories:", error)
   }
 }
 
@@ -83,16 +152,45 @@ onMounted(() => {
 <template>
   <div class="py-4 flex flex-col h-full">
     
-    <header class="mb-6 mt-2 flex justify-between items-end">
+    <header class="mb-4 mt-2 flex justify-between items-end">
       <div>
         <h2 class="text-3xl font-extrabold tracking-tighter text-brand-textMain">Transactions</h2>
-        <p class="text-sm text-brand-textMuted mt-1">May 2026 • {{ transactions.length }} operations</p>
+        <p class="text-sm text-brand-textMuted mt-1">{{ filteredTransactions.length }} operations</p>
       </div>
     </header>
 
-    <div class="flex flex-col gap-3 pb-24">
+    <div class="flex items-center justify-between bg-brand-surface rounded-app px-4 py-3 mb-4 border border-white/5">
+      <button @click="goPrevMonth" class="text-brand-textMuted hover:text-brand-textMain transition-colors p-1">
+        <Icons.ChevronLeft class="w-5 h-5" />
+      </button>
+      <span class="text-sm font-semibold text-brand-textMain">{{ viewMonthLabel }}</span>
+      <button @click="goNextMonth"
+              class="text-brand-textMuted transition-colors p-1"
+              :class="isCurrentMonth ? 'opacity-30 cursor-not-allowed' : 'hover:text-brand-textMain'">
+        <Icons.ChevronRight class="w-5 h-5" />
+      </button>
+    </div>
+
+    <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-5 pb-1">
+      <button @click="selectedCategoryId = null"
+              class="shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border"
+              :class="selectedCategoryId === null ? 'bg-brand-primary text-white border-brand-primary' : 'bg-brand-surface text-brand-textMuted border-white/10 hover:border-white/20'">
+        All
+      </button>
+      <button v-for="cat in filterCategories" :key="cat.id" @click="selectedCategoryId = cat.id"
+              class="shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border"
+              :class="selectedCategoryId === cat.id ? 'bg-brand-primary text-white border-brand-primary' : 'bg-brand-surface text-brand-textMuted border-white/10 hover:border-white/20'">
+        {{ cat.name }}
+      </button>
+    </div>
+
+    <div v-if="transactions.length === 0" class="text-center text-brand-textMuted text-sm py-12">
+      No transactions for this month
+    </div>
+
+    <div v-else class="flex flex-col gap-3 pb-24">
       <TransactionItem 
-        v-for="tx in transactions" 
+        v-for="tx in filteredTransactions" 
         :key="tx.id" 
         :transaction="tx"
         :iconComponent="getCategoryIcon(tx.primary_category)"
@@ -145,7 +243,12 @@ onMounted(() => {
   </div>
 </template>
 
-<script>
-import { ChevronDown } from 'lucide-vue-next'
-export default { components: { ChevronDown } }
-</script>
+<style scoped>
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</style>

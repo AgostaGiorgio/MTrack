@@ -1,6 +1,6 @@
 <script setup>
 import { RouterView, RouterLink, useRoute } from 'vue-router'
-import { Home, List, Settings } from 'lucide-vue-next'
+import { Home, List, BarChart3, Settings } from 'lucide-vue-next'
 import AppHeader from './components/AppHeader.vue'
 
 const route = useRoute()
@@ -23,6 +23,10 @@ const route = useRoute()
 
         <RouterLink to="/transactions" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/transactions' ? 'text-brand-primary' : 'text-brand-textMuted'">
           <List :size="20" :stroke-width="route.path === '/transactions' ? 2.5 : 2" />
+        </RouterLink>
+
+        <RouterLink to="/statistics" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/statistics' ? 'text-brand-primary' : 'text-brand-textMuted'">
+          <BarChart3 :size="20" :stroke-width="route.path === '/statistics' ? 2.5 : 2" />
         </RouterLink>
 
         <RouterLink to="/categories" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/categories' ? 'text-brand-primary' : 'text-brand-textMuted'">
