@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from uuid import UUID
 from src.clients.postgres_client import PostgresClient
 from src.repositories import queries as q
@@ -10,12 +11,15 @@ class TransactionsRepository:
     def __init__(self, postgres_client: PostgresClient):
         self.__postgres_client = postgres_client
 
-    async def get_transactions(self) -> list[Transaction] | None:
+    async def get_transactions(self, start_date: datetime, end_date: datetime) -> list[Transaction] | None:
         logger.debug("Executing transactions query...")
         transactions = None
         async with self.__postgres_client.async_session() as session:
             try:
-                result = await session.execute(q.GET_TRANSACTIONS)
+                result = await session.execute(q.GET_TRANSACTIONS, {
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
                 rows = result.mappings().all()
                 transactions = [ Transaction(**row) for row in rows ]
                 logger.debug(f"Transactions data retrieved!")
