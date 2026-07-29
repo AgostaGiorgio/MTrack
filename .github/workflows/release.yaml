@@ -81,16 +81,16 @@ jobs:
           git add app.version
           
           # 6. EXECUTE CUSTOM SCRIPT (if it exists)
-          if [ -f "./scripts/update_versions.sh" ]; then
+          if [ -f "./update_versions.sh" ]; then
             echo "Custom script found, running manifest updates..."
-            chmod +x ./scripts/update_versions.sh
-            ./scripts/update_versions.sh "$NEW_VERSION"
-            
+            chmod +x ./update_versions.sh
+            ./update_versions.sh "$NEW_VERSION"
+
             # Add files to git only if they exist to prevent workflow failure
             [ -f "backend/pyproject.toml" ] && git add backend/pyproject.toml
             [ -f "frontend/package.json" ] && git add frontend/package.json
           else
-            echo "ℹ️ Script ./scripts/update_versions.sh not found, skipping."
+            echo "ℹ️ Script ./update_versions.sh not found, skipping."
           fi
 
           # 7. Commit all the updated version files
