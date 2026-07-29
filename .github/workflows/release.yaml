@@ -102,8 +102,14 @@ jobs:
           # 9. Push master and tag to the remote repository
           git push origin master
           git push origin "v$NEW_VERSION"
+          
+          # 10. CREATE GITHUB RELEASE
+          echo "Creating GitHub Release..."
+          gh release create "v$NEW_VERSION" \
+            --title "Release v$NEW_VERSION" \
+            --generate-notes
 
-          # 10. Merge/Sync master back into develop to maintain the new version
+          # 11. Merge/Sync master back into develop to maintain the new version
           git checkout develop
           git merge master -m "chore(release): sync master into develop (version $NEW_VERSION)"
           git push origin develop
