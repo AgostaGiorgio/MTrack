@@ -6,6 +6,8 @@ on:
 jobs:
   release:
     name: Version Calculation, Merge and Tag
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
     # The job runs ONLY if triggered from the develop branch
     if: github.ref == 'refs/heads/develop'
