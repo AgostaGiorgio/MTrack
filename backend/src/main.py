@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from src.di import Container
 from src.config.app_config import app_config
 from src.clients.orbit_client import OrbitClient
-from src.routers import transactions, dashboard, categories
+from src.routers import transactions, dashboard, categories, statistics
 
 
 if app_config.orbit_api_url:
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 logger = logging.getLogger(__name__)
 
 container = Container()
-container.wire(modules=[transactions, dashboard, categories])
+container.wire(modules=[transactions, dashboard, categories, statistics])
 
 app = FastAPI(lifespan=lifespan, title="MTrack API", version="2.1.1")
 
@@ -42,3 +42,4 @@ app.add_middleware(
 app.include_router(transactions.api_router, prefix="/api/v1/transactions", tags=["transactions"])
 app.include_router(dashboard.api_router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(categories.api_router, prefix="/api/v1/categories", tags=["categories"])
+app.include_router(statistics.api_router, prefix="/api/v1/statistics", tags=["statistics"])

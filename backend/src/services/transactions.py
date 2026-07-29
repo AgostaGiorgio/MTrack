@@ -5,6 +5,7 @@ from src.repositories.transactions import TransactionsRepository
 from src.repositories.categories import CategoriesRepository
 from src.models.transactions import Transaction
 from src.models.categories import Category
+from src.utils.date_utils import get_mtrack_month_range
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +16,10 @@ class TransactionsService:
         self.__transactions_repository = transactions_repository
         self.__categories_repository = categories_repository
 
-    async def get_transactions(self) -> list[Transaction]:
+    async def get_transactions(self, year: int | None = None, month: int | None = None) -> list[Transaction]:
         logger.info("Fetching transactions...")
-        transactions = await self.__transactions_repository.get_transactions()
+        start_date, end_date = get_mtrack_month_range(year, month)
+        transactions = await self.__transactions_repository.get_transactions(start_date, end_date)
         categories = await self.__categories_repository.get_categories()
         
         for transaction in transactions:

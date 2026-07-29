@@ -132,23 +132,26 @@ UNLINK_SUB_CATEGORY = text("""
 GET_TRANSACTIONS = text("""
     SELECT id, amount, created_at as date, extract_merchant_name(description) as description, card, primary_category_id as primary_category, secondary_category_id as secondary_category
     FROM transactions
-    WHERE created_at >= (
-        CASE
-        WHEN EXTRACT(DAY FROM current_date) >= 3
-            THEN date_trunc('month', current_date) + interval '2 days'
-        ELSE
-            date_trunc('month', current_date) - interval '1 month' + interval '2 days'
-        END
-    )
-    AND created_at < (
-        CASE
-        WHEN EXTRACT(DAY FROM current_date) >= 3
-            THEN date_trunc('month', current_date) + interval '2 days'
-        ELSE
-            date_trunc('month', current_date) - interval '1 month' + interval '2 days'
-        END
-    ) + interval '1 month'
+    WHERE created_at >= :start_date
+    AND created_at < :end_date
     ORDER BY created_at DESC;
+""")
+
+GET_CATEGORY_MONTHLY_TRENDS = text("""
+    SELECT
+        to_char(
+            date_trunc('month', t.created_at - interval '2 days'),
+            'Mon YYYY'
+        ) AS month,
+        c.name AS category_name,
+        SUM(t.amount) AS amount
+    FROM transactions t
+    LEFT JOIN categories c ON c.id = t.primary_category_id
+    WHERE t.created_at >= date_trunc('year', current_date)
+    AND t.created_at < date_trunc('year', current_date) + interval '1 year'
+    AND LOWER(c.name) = ANY(:category_names)
+    GROUP BY 1, 2
+    ORDER BY MIN(date_trunc('month', t.created_at - interval '2 days'));
 """)
 
 UPDATE_TRANSACTION_CATEGORIES = text("""
