@@ -7,6 +7,8 @@ class AppConfig(BaseSettings):
     cors_allow_methods: list[str] = ["*"]
     cors_allow_headers: list[str] = ["*"]
     
+    app_url: str = "localhost"
+    
     postgresql_user: str 
     postgresql_password: str 
     postgresql_host: str 
