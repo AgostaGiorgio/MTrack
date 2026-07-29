@@ -7,6 +7,7 @@ jobs:
   release:
     name: Version Calculation, Merge and Tag
     runs-on: ubuntu-latest
+    # The job runs ONLY if triggered from the develop branch
     if: github.ref == 'refs/heads/develop'
     permissions:
       contents: write
@@ -15,12 +16,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Required to fetch all history and compare branches
 
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Ensure the local master branch is aligned with the remote
           git fetch origin master:master
 
       - name: Release Process
@@ -41,7 +43,7 @@ jobs:
           MINOR_BUMP=0
 
           # Analyze each commit message to determine the bump
-          # It also supports scopes (e.g., feat(api): or fix(ui)!:)
+          # It supports scopes (e.g., feat(api): or fix(ui)!:)
           while read -r msg; do
             [ -z "$msg" ] && continue
             if echo "$msg" | grep -qE '^(feat|fix)(\([^)]+\))?!:'; then
@@ -74,19 +76,34 @@ jobs:
           git checkout master
           git merge develop --no-ff -m "chore(release): merge develop into master for release $NEW_VERSION"
 
-          # 5. Update app.version file on master
+          # 5. Update the core app.version file
           echo "$NEW_VERSION" > app.version
           git add app.version
+          
+          # 6. EXECUTE CUSTOM SCRIPT (if it exists)
+          if [ -f "./scripts/update_versions.sh" ]; then
+            echo "Custom script found, running manifest updates..."
+            chmod +x ./scripts/update_versions.sh
+            ./scripts/update_versions.sh "$NEW_VERSION"
+            
+            # Add files to git only if they exist to prevent workflow failure
+            [ -f "backend/pyproject.toml" ] && git add backend/pyproject.toml
+            [ -f "frontend/package.json" ] && git add frontend/package.json
+          else
+            echo "ℹ️ Script ./scripts/update_versions.sh not found, skipping."
+          fi
+
+          # 7. Commit all the updated version files
           git commit -m "chore(release): bump version to $NEW_VERSION"
 
-          # 6. Create the Tag
+          # 8. Create the Tag
           git tag "$NEW_VERSION"
 
-          # 7. Push master and tag
+          # 9. Push master and tag to the remote repository
           git push origin master
           git push origin "$NEW_VERSION"
 
-          # 8. Merge/Sync master back into develop to maintain the new version
+          # 10. Merge/Sync master back into develop to maintain the new version
           git checkout develop
           git merge master -m "chore(release): sync master into develop (version $NEW_VERSION)"
           git push origin develop
