@@ -28,6 +28,8 @@ async def lifespan(app: FastAPI):
         orbit_client.start()
         yield
         orbit_client.stop()
+    else:
+        yield
 
 logger = logging.getLogger(__name__)
 
