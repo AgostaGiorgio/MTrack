@@ -1,11 +1,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { api } from '../services/api'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
+import { BarChart3 } from 'lucide-vue-next'
+
+import { api } from '../services/api'
+import { stringToColor } from '../utils/colors'
+import { formatMoney } from '../utils/format'
 import MonthlyChart from '../components/MonthlyChart.vue'
+import MoneyValue from '../components/ui/MoneyValue.vue'
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip)
+
+// Categories tracked on the statistics page.
+const TRACKED_CATEGORIES = ['Bills', 'Food']
 
 const stats = ref(null)
 const loading = ref(true)
@@ -23,7 +33,7 @@ const averageMonthly = computed(() => {
 
 const vsAveragePercent = computed(() => {
   if (!averageMonthly.value || !stats.value?.total_spent) return 0
-  return ((stats.value.total_spent - averageMonthly.value) / averageMonthly.value * 100)
+  return ((stats.value.total_spent - averageMonthly.value) / averageMonthly.value) * 100
 })
 
 const vsAverageLabel = computed(() => {
@@ -33,19 +43,25 @@ const vsAverageLabel = computed(() => {
   return 'on par with average'
 })
 
-const categoryColors = {
-  Bills: '#8b5cf6',
-  Food: '#10b981',
+const vsAverageClass = computed(() =>
+  vsAveragePercent.value > 0 ? 'text-red-400' : 'text-emerald-400'
+)
+
+const latestAmount = (catTrend) => {
+  const data = catTrend.monthly_data || []
+  return data.length ? data[data.length - 1].amount : 0
 }
 
 const categoryChartData = (catTrend) => ({
-  labels: catTrend.monthly_data.map(d => d.month),
-  datasets: [{
-    data: catTrend.monthly_data.map(d => d.amount),
-    backgroundColor: categoryColors[catTrend.category_name] || '#8b5cf6',
-    borderRadius: 4,
-    barThickness: 12,
-  }],
+  labels: (catTrend.monthly_data || []).map((d) => d.month),
+  datasets: [
+    {
+      data: (catTrend.monthly_data || []).map((d) => d.amount),
+      backgroundColor: stringToColor(catTrend.category_name),
+      borderRadius: 4,
+      maxBarThickness: 24,
+    },
+  ],
 })
 
 const miniChartOptions = {
@@ -54,24 +70,28 @@ const miniChartOptions = {
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: '#1e293b',
+      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
       titleColor: '#94a3b8',
       bodyColor: '#f8fafc',
-      padding: 12,
+      padding: 10,
       cornerRadius: 12,
       displayColors: false,
       callbacks: {
-        label: (ctx) => ` Đ ${ctx.raw.toFixed(2)}`,
+        label: (ctx) => ` ${formatMoney(ctx.raw)}`,
       },
     },
   },
   scales: {
     x: {
-      grid: { display: false, drawBorder: false },
-      ticks: { color: '#94a3b8', font: { size: 9 } },
+      grid: { display: false },
+      border: { display: false },
+      ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 0 },
     },
     y: {
-      grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+      grid: { color: 'rgba(255, 255, 255, 0.05)' },
+      border: { display: false },
       ticks: { display: false },
     },
   },
@@ -80,7 +100,7 @@ const miniChartOptions = {
 const loadStats = async () => {
   loading.value = true
   try {
-    stats.value = await api.getStatistics(['Bills', 'Food'])
+    stats.value = await api.getStatistics(TRACKED_CATEGORIES)
   } catch (error) {
     console.error('Error loading statistics:', error)
   } finally {
@@ -92,42 +112,87 @@ onMounted(loadStats)
 </script>
 
 <template>
-  <div class="py-4 flex flex-col gap-5">
-    <header class="mb-1">
-      <h2 class="text-3xl font-extrabold tracking-tighter text-brand-textMain">Statistics</h2>
-    </header>
+  <main class="w-full px-4">
+    <div class="py-4 flex flex-col gap-5 w-full">
+      <LoadingSkeleton v-if="loading" :lines="4" height="h-24" />
 
-    <div v-if="loading" class="text-brand-textMuted text-sm py-8 text-center">Loading...</div>
+      <EmptyState
+        v-else-if="!stats"
+        :icon="BarChart3"
+        title="Unable to load statistics"
+        description="Please try again later."
+      />
 
-    <template v-else-if="stats">
-      <section class="bg-brand-surface p-5 rounded-app shadow-sm border border-white/5 flex flex-col items-center">
-        <span class="text-xs text-brand-textMuted uppercase tracking-widest font-semibold">{{ stats.current_month }}</span>
-        <h3 class="text-5xl font-extrabold tracking-tighter text-brand-textMain mt-1">
-          Đ {{ stats.total_spent.toFixed(2) }}
-        </h3>
-        <div class="mt-3 flex items-center gap-1.5 text-sm font-medium"
-             :class="vsAveragePercent > 0 ? 'text-red-400' : 'text-green-400'">
-          <span>{{ vsAverageLabel }}</span>
-        </div>
-      </section>
+      <template v-else>
+        <!-- Current month vs average -->
+        <section class="app-card rounded-app p-5 flex flex-col gap-4">
+          <div class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">
+              {{ stats.current_month }}
+            </span>
+            <div class="text-4xl font-extrabold tracking-tighter">
+              <MoneyValue :value="stats.total_spent" />
+            </div>
+            <span class="text-xs font-semibold" :class="vsAverageClass" title="vs monthly average">
+              {{ vsAverageLabel }}
+            </span>
+          </div>
 
-      <section class="bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex flex-col">
-        <h3 class="text-sm font-semibold text-brand-textMuted mb-3">Yearly Trend</h3>
-        <MonthlyChart :data="stats.monthly_trends" />
-      </section>
+          <div class="grid grid-cols-2 gap-2 pt-4 border-t border-white/5">
+            <div class="flex flex-col gap-0.5">
+              <span class="text-[10px] uppercase tracking-widest font-semibold text-brand-textMuted">Monthly average</span>
+              <MoneyValue :value="averageMonthly" class="text-brand-textMain text-sm font-bold" />
+            </div>
+            <div class="flex flex-col gap-0.5">
+              <span class="text-[10px] uppercase tracking-widest font-semibold text-brand-textMuted">Months tracked</span>
+              <span class="text-brand-textMain text-sm font-bold">{{ previousMonths.length }}</span>
+            </div>
+          </div>
+        </section>
 
-      <section v-for="ct in stats.category_trends" :key="ct.category_name"
-               class="bg-brand-surface p-4 rounded-app shadow-sm border border-white/5 flex flex-col">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-brand-textMuted">{{ ct.category_name }}</h3>
-          <span class="text-sm font-bold text-brand-textMain">
-            Đ {{ ct.monthly_data.length > 0 ? ct.monthly_data[ct.monthly_data.length - 1].amount.toFixed(2) : '0.00' }}
-          </span>
-        </div>
-        <div class="relative h-32">
-          <Bar :data="categoryChartData(ct)" :options="miniChartOptions" />
-        </div>
-      </section>
-    </template>
-  </div>
+        <!-- Yearly trend -->
+        <section class="app-card rounded-app p-5 flex flex-col gap-3">
+          <h2 class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">Yearly trend</h2>
+
+          <MonthlyChart v-if="stats.monthly_trends.length" :data="stats.monthly_trends" />
+
+          <EmptyState v-else :icon="BarChart3" title="No trend data" description="Monthly totals will appear here." />
+        </section>
+
+        <!-- Per-category trends -->
+        <template v-if="stats.category_trends.length">
+          <section
+            v-for="ct in stats.category_trends"
+            :key="ct.category_name"
+            class="app-card rounded-app p-5 flex flex-col gap-3"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 min-w-0">
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0"
+                  :style="{ backgroundColor: stringToColor(ct.category_name) }"
+                />
+                <h2 class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted truncate">
+                  {{ ct.category_name }}
+                </h2>
+              </div>
+              <MoneyValue :value="latestAmount(ct)" class="text-brand-textMain text-sm font-bold shrink-0" />
+            </div>
+
+            <div class="relative h-32">
+              <Bar :data="categoryChartData(ct)" :options="miniChartOptions" />
+            </div>
+          </section>
+        </template>
+
+        <section v-else class="app-card rounded-app p-5">
+          <EmptyState
+            :icon="BarChart3"
+            title="No category trends"
+            :description="`No data for ${TRACKED_CATEGORIES.join(', ')} yet.`"
+          />
+        </section>
+      </template>
+    </div>
+  </main>
 </template>

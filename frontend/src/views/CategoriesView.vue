@@ -1,149 +1,256 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import * as Icons from 'lucide-vue-next'
 
 import { api } from '../services/api'
-import * as Icons from 'lucide-vue-next'
-import BottomSheet from '../components/BottomSheet.vue'
+import { useToast } from '../composables/useToast'
+import BottomSheet from '../components/ui/BottomSheet.vue'
+import InputField from '../components/ui/InputField.vue'
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
 import IconPicker from '../components/IconPicker.vue'
 
+const toast = useToast()
 
 const categories = ref([])
+const loading = ref(true)
 
 const expandedCatId = ref(null)
 const isSheetOpen = ref(false)
 const sheetMode = ref('add-primary')
 const formData = ref({ id: null, name: '', icon: 'Circle', parentId: null })
-const iconSearch = ref('')
+const saving = ref(false)
 
-const toggleAccordion = (id) => expandedCatId.value = expandedCatId.value === id ? null : id
+const titles = {
+  'add-primary': 'New category',
+  'edit-primary': 'Edit category',
+  'add-secondary': 'New subcategory',
+}
+
+const sheetTitle = computed(() => titles[sheetMode.value] || 'Category')
+
+const toggleAccordion = (id) => {
+  expandedCatId.value = expandedCatId.value === id ? null : id
+}
 
 const openSheet = (mode, parentId = null, existingData = null) => {
   sheetMode.value = mode
-  iconSearch.value = ''
-  if (existingData) formData.value = { ...existingData }
-  else formData.value = { id: null, name: '', icon: 'Circle', parentId }
-  if (formData.value.icon === null) formData.value.icon = 'Circle'
+  if (existingData) {
+    formData.value = {
+      id: existingData.id,
+      name: existingData.name,
+      icon: existingData.icon || 'Circle',
+      parentId: null,
+    }
+  } else {
+    formData.value = { id: null, name: '', icon: 'Circle', parentId }
+  }
   isSheetOpen.value = true
 }
-const closeSheet = () => isSheetOpen.value = false
+
+const closeSheet = () => {
+  isSheetOpen.value = false
+}
 
 const loadCategories = async () => {
+  loading.value = true
   try {
-    const [rawCategories] = await Promise.all([
-      api.getCategories()
-    ])
-    categories.value = rawCategories
+    categories.value = await api.getCategories()
   } catch (error) {
-    console.error("Failed to load categories:", error)
+    console.error('Failed to load categories:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const saveCategory = async () => {
+  const name = formData.value.name.trim()
+  if (!name) {
+    toast.error('Enter a category name')
+    return
+  }
+
+  const payload = {
+    name,
+    icon: formData.value.icon || 'Circle',
+    ...(formData.value.parentId ? { parentId: formData.value.parentId } : {}),
+  }
+
+  saving.value = true
+  try {
+    if (formData.value.id) {
+      await api.updateCategory({ id: formData.value.id, ...payload })
+    } else {
+      await api.addCategory(payload)
+    }
+    toast.success(
+      formData.value.id
+        ? 'Category updated'
+        : formData.value.parentId
+          ? 'Subcategory created'
+          : 'Category created'
+    )
+    await loadCategories()
+    closeSheet()
+  } catch (error) {
+    toast.error('Could not save the category')
+    console.error('Failed to save category:', error)
+  } finally {
+    saving.value = false
+  }
+}
+
+const deleteSubcategory = async (categoryId, subcategoryId) => {
+  if (!window.confirm('Are you sure you want to delete this subcategory?')) return
+  try {
+    await api.unlinkSubCategory(categoryId, subcategoryId)
+    toast.success('Subcategory removed')
+    await loadCategories()
+  } catch (error) {
+    toast.error('Could not remove the subcategory')
+    console.error('Failed to unlink subcategory:', error)
   }
 }
 
 onMounted(() => {
   loadCategories()
 })
-
-const saveCategory = async () => {
-  try {
-    if (formData.value.id) {
-      await api.updateCategory(formData.value)
-    } else{
-      await api.addCategory(formData.value)
-    }
-    await loadCategories()
-  } catch (error) {
-    console.error("Failed to save category:", error)
-  } finally {
-    closeSheet()
-  }
-}
-
-const deleteSubcategory = async (categoryId, subcategoryId) => {
-  if (window.confirm('Are you sure you want to delete this subcategory?')) {
-    try {
-      await api.unlinkSubCategory(categoryId, subcategoryId)
-      await loadCategories()
-    } catch (error) {
-      console.error("Failed to unlink subcategory:", error)
-    }
-  }
-}
 </script>
 
 <template>
-  <div class="py-4 flex flex-col h-full">
-    
-    <header class="mb-6 mt-2 flex justify-between items-end">
-      <div>
-        <h2 class="text-3xl font-extrabold tracking-tighter text-brand-textMain">Categories</h2>
-        <p class="text-sm text-brand-textMuted mt-1">Manage your tracking structure</p>
-      </div>
-      <button @click="openSheet('add-primary')" class="w-10 h-10 bg-brand-primary rounded-full flex items-center justify-center shadow-lg hover:bg-brand-secondary text-white">
-        <Icons.Plus class="w-6 h-6" />
-      </button>
-    </header>
-
-    <div class="flex flex-col gap-2 pb-24">
-      <div v-for="cat in categories" :key="cat.id" class="bg-brand-surface rounded-app-sm shadow-sm border border-white/5 overflow-hidden">
-        
-        <div @click="toggleAccordion(cat.id)" class="py-2 px-4 flex justify-between items-center cursor-pointer">
-          <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-full bg-brand-background flex items-center justify-center">
-              <component :is="Icons[cat.icon] || Icons.Circle" class="w-5 h-5 text-brand-primary" />
-            </div>
-            <span class="text-brand-textMain font-bold text-lg">{{ cat.name }}</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <button @click.stop="openSheet('edit-primary', null, cat)" class="p-2 text-brand-textMuted">
-              <Icons.Edit2 class="w-4 h-4" />
-            </button>
-            <component :is="expandedCatId === cat.id ? Icons.ChevronUp : Icons.ChevronDown" class="w-5 h-5 text-brand-textMuted transition-transform" />
-          </div>
-        </div>
-
-        <div 
-          class="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out"
-          :class="expandedCatId === cat.id ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+  <main class="w-full px-4">
+    <div class="py-4 flex flex-col gap-4 w-full">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">Categories</h2>
+        <button
+          type="button"
+          @click="openSheet('add-primary')"
+          class="h-9 pl-3 pr-4 rounded-full bg-brand-primary text-white flex items-center gap-1.5 shadow-lg shadow-brand-primary/20 hover:bg-brand-secondary active:scale-95 transition-all"
         >
-          <div class="overflow-hidden">
-            <div class="bg-brand-background/30 border-t border-white/5 py-2 px-3 flex flex-col gap-2">
-              <div v-for="sub in cat.sub_categories" :key="sub.id" class="flex justify-between items-center p-2">
-                <span class="text-brand-textMuted font-medium pl-2 border-l-2 border-brand-primary/50">{{ sub.name }}</span>
-                <button @click="deleteSubcategory(cat.id, sub.id)" class="p-1.5 text-brand-textMuted hover:text-red-400">
-                  <Icons.Trash2 class="w-4 h-4" />
-                </button>
-              </div>
-              <button @click="openSheet('add-secondary', cat.id)" class="flex items-center gap-2 text-sm text-brand-primary font-medium p-2 self-start">
-                <Icons.Plus class="w-4 h-4" /> Add Subcategory
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <BottomSheet 
-    :isOpen="isSheetOpen" 
-    :title="sheetMode === 'add-primary' ? 'New Category' : 'Edit Category'"
-    @close="closeSheet"
-    >
-      <div class="flex flex-col gap-5">
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-semibold text-brand-textMuted uppercase tracking-wider">Name</label>
-          <input v-model="formData.name" type="text" placeholder="e.g. Health" 
-                  class="w-full bg-brand-background text-brand-textMain border border-white/10 rounded-xl p-4 focus:outline-none focus:border-brand-primary font-medium placeholder:text-white/20">
-        </div>
-
-        <IconPicker v-if="sheetMode !== 'add-secondary'" v-model="formData.icon" />
-
-        <button @click="saveCategory" class="mt-4 w-full bg-brand-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-brand-secondary shrink-0">
-          Save Category
+          <Icons.Plus :size="16" :stroke-width="2.5" />
+          <span class="text-xs font-bold whitespace-nowrap">Add category</span>
         </button>
       </div>
-    </BottomSheet>
-  </div>
-</template>
 
-<style scoped>
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
+      <LoadingSkeleton v-if="loading" :lines="5" height="h-14" />
+
+      <EmptyState
+        v-else-if="categories.length === 0"
+        :icon="Icons.Tags"
+        title="No categories yet"
+        description="Create your first category to start organizing expenses."
+      >
+        <button
+          type="button"
+          @click="openSheet('add-primary')"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-app-sm bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary transition-colors"
+        >
+          <Icons.Plus :size="16" /> New category
+        </button>
+      </EmptyState>
+
+      <section v-else class="app-card rounded-app overflow-hidden divide-y divide-white/5">
+        <div v-for="cat in categories" :key="cat.id">
+          <div
+            @click="toggleAccordion(cat.id)"
+            class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
+          >
+            <span
+              class="w-9 h-9 rounded-full bg-brand-background border border-white/5 flex items-center justify-center shrink-0"
+            >
+              <component :is="Icons[cat.icon] || Icons.Circle" :size="16" class="text-brand-primary" />
+            </span>
+
+            <div class="flex flex-col min-w-0 flex-1 gap-0.5">
+              <span class="text-brand-textMain font-semibold text-sm truncate">{{ cat.name }}</span>
+              <span class="text-[11px] text-brand-textMuted">
+                {{ cat.sub_categories?.length || 0 }}
+                {{ (cat.sub_categories?.length || 0) === 1 ? 'subcategory' : 'subcategories' }}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              @click.stop="openSheet('edit-primary', null, cat)"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-brand-textMuted hover:text-brand-primary hover:bg-white/5 transition-colors shrink-0"
+              title="Edit category"
+            >
+              <Icons.Edit2 :size="14" />
+            </button>
+
+            <component
+              :is="expandedCatId === cat.id ? Icons.ChevronUp : Icons.ChevronDown"
+              :size="16"
+              class="text-brand-textMuted shrink-0"
+            />
+          </div>
+
+          <div
+            class="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out"
+            :class="expandedCatId === cat.id ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
+          >
+            <div class="overflow-hidden">
+              <div class="px-4 pb-3">
+                <div
+                  v-if="cat.sub_categories?.length"
+                  class="flex flex-col gap-1 ml-1 pl-4 border-l border-white/10"
+                >
+                  <div
+                    v-for="sub in cat.sub_categories"
+                    :key="sub.id"
+                    class="flex items-center gap-3 py-1.5"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-primary/60 shrink-0" />
+                    <span class="flex-1 text-brand-textMuted text-sm truncate">{{ sub.name }}</span>
+                    <button
+                      type="button"
+                      @click="deleteSubcategory(cat.id, sub.id)"
+                      class="w-7 h-7 rounded-full flex items-center justify-center text-brand-textMuted hover:text-red-400 hover:bg-white/5 transition-colors shrink-0"
+                      title="Delete subcategory"
+                    >
+                      <Icons.Trash2 :size="13" />
+                    </button>
+                  </div>
+                </div>
+
+                <p v-else class="text-brand-textMuted text-xs py-2 pl-1">No subcategories</p>
+
+                <button
+                  type="button"
+                  @click="openSheet('add-secondary', cat.id)"
+                  class="flex items-center gap-1.5 text-brand-primary text-xs font-semibold py-1.5 hover:text-brand-secondary transition-colors"
+                >
+                  <Icons.Plus :size="14" /> Add subcategory
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <BottomSheet :open="isSheetOpen" :title="sheetTitle" @close="closeSheet">
+      <div class="flex flex-col gap-5">
+        <InputField
+          v-model="formData.name"
+          label="Name"
+          placeholder="e.g. Health"
+          hint="Shown on the dashboard and transactions."
+        />
+
+        <IconPicker v-if="sheetMode !== 'add-secondary'" v-model="formData.icon" />
+      </div>
+
+      <template #footer>
+        <button
+          type="button"
+          :disabled="saving"
+          @click="saveCategory"
+          class="w-full bg-brand-primary text-white py-3.5 rounded-app-sm font-bold shadow-lg shadow-brand-primary/20 hover:bg-brand-secondary transition-colors disabled:opacity-60"
+        >
+          {{ saving ? 'Saving…' : sheetMode === 'add-secondary' ? 'Create subcategory' : 'Save category' }}
+        </button>
+      </template>
+    </BottomSheet>
+  </main>
+</template>
