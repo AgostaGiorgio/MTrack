@@ -47,11 +47,12 @@ export const api = {
     return response.data
   },
 
-  async updateTransactionCategories(transactionId, primaryCategoryId, secondaryCategoryId) {
-    const response = await apiClient.put(`/api/v1/transactions/${transactionId}`, {
-      primary_category_id: primaryCategoryId,
-      secondary_category_id: secondaryCategoryId
-    })
+  async updateTransaction(transactionId, payload) {
+    const response = await apiClient.put(`/api/v1/transactions/${transactionId}`, payload)
     return response.data
+  },
+
+  async deleteTransaction(transactionId) {
+    await apiClient.delete(`/api/v1/transactions/${transactionId}`)
   }
 }

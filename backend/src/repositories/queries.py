@@ -154,9 +154,20 @@ GET_CATEGORY_MONTHLY_TRENDS = text("""
     ORDER BY MIN(date_trunc('month', t.created_at - interval '2 days'));
 """)
 
-UPDATE_TRANSACTION_CATEGORIES = text("""
+UPDATE_TRANSACTION = text("""
     UPDATE transactions
-    SET primary_category_id = :primary_category_id, secondary_category_id = :secondary_category_id
+    SET amount = CASE WHEN :update_amount THEN :amount ELSE amount END,
+        created_at = CASE WHEN :update_date THEN
+            (CAST(:transaction_date AS date) + (created_at AT TIME ZONE 'UTC')::time) AT TIME ZONE 'UTC'
+        ELSE created_at END,
+        primary_category_id = CASE WHEN :update_primary THEN :primary_category_id ELSE primary_category_id END,
+        secondary_category_id = CASE WHEN :update_secondary THEN :secondary_category_id ELSE secondary_category_id END
     WHERE id = :transaction_id
     RETURNING id, amount, created_at as date, extract_merchant_name(description) as description, card, primary_category_id as primary_category, secondary_category_id as secondary_category
+""")
+
+DELETE_TRANSACTION = text("""
+    DELETE FROM transactions
+    WHERE id = :transaction_id
+    RETURNING id
 """)

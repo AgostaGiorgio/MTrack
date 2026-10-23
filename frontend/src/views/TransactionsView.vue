@@ -5,11 +5,9 @@ import * as Icons from 'lucide-vue-next'
 import { api } from '../services/api'
 import { useToast } from '../composables/useToast'
 import TransactionItem from '../components/TransactionItem.vue'
-import BottomSheet from '../components/ui/BottomSheet.vue'
-import SelectField from '../components/ui/SelectField.vue'
+import RecordEditor from '../components/RecordEditor.vue'
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
-import MoneyValue from '../components/ui/MoneyValue.vue'
 
 const toast = useToast()
 
@@ -83,24 +81,8 @@ const filterCategories = computed(() => {
 })
 
 const editingTx = ref(null)
-const editingTxPrimaryId = ref('')
-const editingTxSecondaryId = ref('')
 const saving = ref(false)
-
-const primaryOptions = computed(() =>
-  categories.value.map((category) => ({ value: category.id, label: category.name }))
-)
-
-const availableSubs = computed(() => {
-  if (!editingTx.value || !editingTxPrimaryId.value) return []
-  const cat = categories.value.find((c) => String(c.id) === String(editingTxPrimaryId.value))
-  return cat ? cat.sub_categories || [] : []
-})
-
-const secondaryOptions = computed(() => [
-  { value: '', label: 'None' },
-  ...availableSubs.value.map((sub) => ({ value: sub.id, label: sub.name })),
-])
+const deleting = ref(false)
 
 const getCategoryIcon = (category) => {
   if (!category) return Icons.Circle
@@ -111,47 +93,46 @@ const getCategoryIcon = (category) => {
   return Icons[iconName] || Icons.Circle
 }
 
-const openSheet = (tx) => {
+const openEditor = (tx) => {
   editingTx.value = { ...tx }
-  editingTxPrimaryId.value = tx.primary_category ? tx.primary_category.id : ''
-  editingTxSecondaryId.value = tx.secondary_category ? tx.secondary_category.id : ''
 }
 
-const closeSheet = () => {
+const closeEditor = () => {
   editingTx.value = null
-  editingTxPrimaryId.value = ''
-  editingTxSecondaryId.value = ''
 }
 
-const saveCategories = async () => {
+const handleSave = async (payload) => {
   if (!editingTx.value) return
-
-  const pcat = categories.value.find((c) => String(c.id) === String(editingTxPrimaryId.value))
-  if (!pcat) {
-    toast.error('Select a primary category')
-    return
-  }
-
-  const scat = editingTxSecondaryId.value
-    ? (pcat.sub_categories || []).find((c) => String(c.id) === String(editingTxSecondaryId.value))
-    : null
 
   saving.value = true
   try {
-    await api.updateTransactionCategories(editingTx.value.id, pcat.id, scat?.id)
-    toast.success('Categories updated')
+    await api.updateTransaction(editingTx.value.id, payload)
+    toast.success('Record updated')
     await loadTransactionsData()
-    closeSheet()
+    closeEditor()
   } catch (error) {
-    toast.error('Could not update the transaction')
-    console.error('Failed to update transaction categories:', error)
+    toast.error('Could not update the record')
+    console.error('Failed to update transaction:', error)
   } finally {
     saving.value = false
   }
 }
 
-const handlePrimaryChange = () => {
-  editingTxSecondaryId.value = ''
+const handleDelete = async () => {
+  if (!editingTx.value) return
+
+  deleting.value = true
+  try {
+    await api.deleteTransaction(editingTx.value.id)
+    toast.success('Record deleted')
+    await loadTransactionsData()
+    closeEditor()
+  } catch (error) {
+    toast.error('Could not delete the record')
+    console.error('Failed to delete transaction:', error)
+  } finally {
+    deleting.value = false
+  }
 }
 
 const loadTransactionsData = async () => {
@@ -252,45 +233,20 @@ onMounted(() => {
           :key="tx.id"
           :transaction="tx"
           :icon-component="getCategoryIcon(tx.primary_category)"
-          @edit="openSheet"
+          @edit="openEditor"
         />
       </section>
     </div>
 
-    <BottomSheet :open="!!editingTx" title="Assign category" @close="closeSheet">
-      <div class="flex flex-col gap-5">
-        <div class="flex justify-between items-center gap-3 p-3 bg-brand-surface/60 rounded-app-sm border border-white/5">
-          <span class="text-brand-textMuted text-sm truncate">{{ editingTx?.description || 'No description' }}</span>
-          <MoneyValue :value="editingTx?.amount" class="text-brand-textMain font-bold text-sm shrink-0" />
-        </div>
-
-        <SelectField
-          v-model="editingTxPrimaryId"
-          label="Primary category"
-          placeholder="Select category…"
-          :options="primaryOptions"
-          @change="handlePrimaryChange"
-        />
-
-        <SelectField
-          v-if="availableSubs.length > 0"
-          v-model="editingTxSecondaryId"
-          label="Secondary category"
-          :options="secondaryOptions"
-          hint="Optional"
-        />
-      </div>
-
-      <template #footer>
-        <button
-          type="button"
-          :disabled="saving || !editingTxPrimaryId"
-          @click="saveCategories"
-          class="w-full bg-brand-primary text-white py-3.5 rounded-app-sm font-bold shadow-lg shadow-brand-primary/20 hover:bg-brand-secondary transition-colors disabled:opacity-60"
-        >
-          {{ saving ? 'Saving…' : 'Save changes' }}
-        </button>
-      </template>
-    </BottomSheet>
+    <RecordEditor
+      :open="!!editingTx"
+      :transaction="editingTx"
+      :categories="categories"
+      :saving="saving"
+      :deleting="deleting"
+      @close="closeEditor"
+      @save="handleSave"
+      @delete="handleDelete"
+    />
   </main>
 </template>
