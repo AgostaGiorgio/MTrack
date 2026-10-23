@@ -32,6 +32,7 @@
 ## Key architecture notes
 - Backend layers: `repositories/` (raw SQL/query) → `services/` (business logic) → `routers/` (endpoints)
 - Routers use `@inject` decorator + `Depends(Provide[Container.xxx_service])` for DI
-- Frontend category colors are deterministic from name hash (`stringToColor` in `DashboardView.vue`)
+- Frontend category colors are deterministic from name hash (`stringToColor` in `src/utils/colors.js`)
+- UI follows the Orbit/MyInves house style: shared card class `.app-card` in `src/assets/main.css`, shell with `AppHeader` + `AppNavbar` (bottom bar on mobile, left rail on desktop), dialogs via `components/ui/BottomSheet.vue`, and small reusable primitives in `components/ui/` (`InputField`, `SelectField`, `MoneyValue`, `LoadingSkeleton`, `EmptyState`, `ToastHost`)
 - No generated code, no migrations, no codegen — schema is managed externally via the n8n ingestion pipeline
 - Single source of version inside app.version file in the root of the project
