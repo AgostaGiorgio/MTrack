@@ -120,8 +120,7 @@ onMounted(() => {
 <template>
   <main class="w-full px-4">
     <div class="py-4 flex flex-col gap-4 w-full">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">Categories</h2>
+      <div class="flex items-center justify-end px-1">
         <button
           type="button"
           @click="openSheet('add-primary')"
