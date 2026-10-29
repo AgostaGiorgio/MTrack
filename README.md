@@ -10,7 +10,7 @@
 
 ---
 
-**MTrack** is a minimal and effective personal expense tracking platform. It provides a clear overview of your spending habits through an interactive dashboard, a transaction list with category reassignment, and a full category/subcategory management system. **Data ingestion is fully automated** via an external n8n pipeline that reads from your financial sources and populates the database — MTrack focuses purely on visualization and categorization.
+**MTrack** is a minimal and effective personal expense tracking platform. It provides a clear overview of your spending habits through an interactive dashboard, a transaction list with amount/category editing and deletion, and a full category/subcategory management system. **Data ingestion is fully automated** via an external n8n pipeline that reads from your financial sources and populates the database — MTrack focuses purely on visualization and categorization.
 
 ---
 
@@ -21,7 +21,7 @@
 | 📊 | **Dashboard Overview** | Current month total spent, per-card breakdown, category pie chart, and monthly trends |
 | 💳 | **Card Tracking** | See spending aggregated by payment card |
 | 🏷️ | **Category Hierarchy** | Two-level categorization system (primary + secondary/subcategories) with custom Lucide icons |
-| ✏️ | **Transaction Editing** | Reassign primary and secondary categories to any transaction |
+| ✏️ | **Record Editing** | Update the amount, reassign categories, or delete any record |
 | 📈 | **Monthly Trends** | Visualize spending evolution over the last 12 months |
 | 🤖 | **Automated Ingestion** | All transaction data is inserted by an n8n pipeline — no manual entry needed |
 | 🖼️ | **Icon Picker** | Assign Lucide icons to categories for visual clarity |
@@ -68,7 +68,8 @@ MTrack/
 | Method | Endpoint | Description |
 |:------:|----------|-------------|
 | `GET` | `/api/v1/transactions` | 📄 Get all transactions |
-| `PUT` | `/api/v1/transactions/{id}` | ✏️ Update transaction categories |
+| `PUT` | `/api/v1/transactions/{id}` | ✏️ Update transaction amount and/or categories |
+| `DELETE` | `/api/v1/transactions/{id}` | 🗑️ Delete a transaction |
 
 ### Categories
 | Method | Endpoint | Description |

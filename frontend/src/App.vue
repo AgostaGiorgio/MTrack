@@ -1,38 +1,21 @@
 <script setup>
-import { RouterView, RouterLink, useRoute } from 'vue-router'
-import { Home, List, BarChart3, Settings } from 'lucide-vue-next'
+import { RouterView } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
-
-const route = useRoute()
+import AppNavbar from './components/AppNavbar.vue'
+import ToastHost from './components/ui/ToastHost.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-brand-background text-brand-textMain font-sans pb-24 selection:bg-brand-primary selection:text-white">
-    
+  <div
+    class="min-h-screen bg-brand-background flex flex-col items-center text-brand-textMain font-sans pb-36 lg:pb-8 selection:bg-brand-primary selection:text-white"
+  >
     <AppHeader />
 
-    <main class="px-4">
+    <div class="w-full lg:pl-28">
       <RouterView />
-    </main>
+    </div>
 
-    <nav class="fixed bottom-6 left-6 right-6 bg-brand-surface/70 backdrop-blur-xl border border-white/10 shadow-app rounded-[24px] z-50">
-      <div class="flex justify-around items-center p-4">
-        <RouterLink to="/" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <Home :size="20" :stroke-width="route.path === '/' ? 2.5 : 2" />
-        </RouterLink>
-
-        <RouterLink to="/transactions" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/transactions' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <List :size="20" :stroke-width="route.path === '/transactions' ? 2.5 : 2" />
-        </RouterLink>
-
-        <RouterLink to="/statistics" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/statistics' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <BarChart3 :size="20" :stroke-width="route.path === '/statistics' ? 2.5 : 2" />
-        </RouterLink>
-
-        <RouterLink to="/categories" class="flex flex-col items-center gap-1 transition-colors duration-200" :class="route.path === '/categories' ? 'text-brand-primary' : 'text-brand-textMuted'">
-          <Settings :size="20" :stroke-width="route.path === '/categories' ? 2.5 : 2" />
-        </RouterLink>
-      </div>
-    </nav>
+    <AppNavbar />
+    <ToastHost />
   </div>
 </template>

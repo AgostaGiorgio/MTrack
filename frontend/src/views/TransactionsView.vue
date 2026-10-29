@@ -1,14 +1,20 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import * as Icons from 'lucide-vue-next'
 
 import { api } from '../services/api'
-import * as Icons from 'lucide-vue-next'
+import { useToast } from '../composables/useToast'
 import TransactionItem from '../components/TransactionItem.vue'
-import BottomSheet from '../components/BottomSheet.vue'
+import RecordEditor from '../components/RecordEditor.vue'
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+
+const toast = useToast()
 
 const transactions = ref([])
 const categories = ref([])
 const selectedCategoryId = ref(null)
+const loading = ref(true)
 
 const getCurrentMtrackMonth = () => {
   const now = new Date()
@@ -29,8 +35,8 @@ const viewMonthLabel = computed(() => {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 })
 
-const isCurrentMonth = computed(() =>
-  viewYear.value === currentMtrack.year && viewMonth.value === currentMtrack.month
+const isCurrentMonth = computed(
+  () => viewYear.value === currentMtrack.year && viewMonth.value === currentMtrack.month
 )
 
 const goPrevMonth = () => {
@@ -56,7 +62,7 @@ const goNextMonth = () => {
 
 const filteredTransactions = computed(() => {
   if (!selectedCategoryId.value) return transactions.value
-  return transactions.value.filter(tx => {
+  return transactions.value.filter((tx) => {
     const catId = tx.primary_category?.id
     return catId && String(catId) === String(selectedCategoryId.value)
   })
@@ -75,72 +81,78 @@ const filterCategories = computed(() => {
 })
 
 const editingTx = ref(null)
-const editingTxPrimaryId = ref(null)
-const editingTxSecondaryId = ref(null)
-
-const availableSubs = computed(() => {
-  if (!editingTx.value || !editingTxPrimaryId.value) return []
-  const cat = categories.value.find(c => c.id === editingTxPrimaryId.value)
-  return cat ? cat.sub_categories : []
-})
+const saving = ref(false)
+const deleting = ref(false)
 
 const getCategoryIcon = (category) => {
   if (!category) return Icons.Circle
 
-  const cat = categories.value.find(c => c.id === category.id)
+  const cat = categories.value.find((c) => c.id === category.id)
   const iconName = cat && cat.icon ? cat.icon : 'Circle'
-  
-  return Icons[iconName] || Icons.undefined
+
+  return Icons[iconName] || Icons.Circle
 }
 
-const openSheet = (tx) => {
+const openEditor = (tx) => {
   editingTx.value = { ...tx }
-  editingTxPrimaryId.value = tx.primary_category ? tx.primary_category.id : null
-  editingTxSecondaryId.value = tx.secondary_category ? tx.secondary_category.id : null
 }
 
-const closeSheet = () => {
+const closeEditor = () => {
   editingTx.value = null
-  editingTxPrimaryId.value = null
-  editingTxSecondaryId.value = null
 }
 
-const saveCategories = async () => {
-  const pcat = categories.value.find(c => c.id === editingTxPrimaryId.value)
-  const scat = editingTxSecondaryId.value ? pcat?.sub_categories.find(c => c.id === editingTxSecondaryId.value) : null
+const handleSave = async (payload) => {
+  if (!editingTx.value) return
 
-  editingTx.value.primary_category = pcat || null
-  editingTx.value.secondary_category = scat || null
-
-  try{
-    await api.updateTransactionCategories(editingTx.value.id, editingTx.value.primary_category.id, editingTx.value.secondary_category?.id)
+  saving.value = true
+  try {
+    await api.updateTransaction(editingTx.value.id, payload)
+    toast.success('Record updated')
     await loadTransactionsData()
-  } catch(error){
-    console.error("Failed to update transaction categories:", error)
-  } finally { 
-    closeSheet()
+    closeEditor()
+  } catch (error) {
+    toast.error('Could not update the record')
+    console.error('Failed to update transaction:', error)
+  } finally {
+    saving.value = false
   }
 }
 
-const handlePrimaryChange = () => {
-  editingTx.value.secondary_category = null
+const handleDelete = async () => {
+  if (!editingTx.value) return
+
+  deleting.value = true
+  try {
+    await api.deleteTransaction(editingTx.value.id)
+    toast.success('Record deleted')
+    await loadTransactionsData()
+    closeEditor()
+  } catch (error) {
+    toast.error('Could not delete the record')
+    console.error('Failed to delete transaction:', error)
+  } finally {
+    deleting.value = false
+  }
 }
 
 const loadTransactionsData = async () => {
+  loading.value = true
   try {
     const params = {}
     if (viewYear.value) params.year = viewYear.value
     if (viewMonth.value) params.month = viewMonth.value
     const [rawTransactionsData, rawCategoriesData] = await Promise.all([
       api.getTransactions(params),
-      api.getCategories()
+      api.getCategories(),
     ])
 
     transactions.value = rawTransactionsData
     categories.value = rawCategoriesData
     selectedCategoryId.value = null
   } catch (error) {
-    console.error("Failed to load transactions or categories:", error)
+    console.error('Failed to load transactions or categories:', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -150,105 +162,91 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="py-4 flex flex-col h-full">
-    
-    <header class="mb-4 mt-2 flex justify-between items-end">
-      <div>
-        <h2 class="text-3xl font-extrabold tracking-tighter text-brand-textMain">Transactions</h2>
-        <p class="text-sm text-brand-textMuted mt-1">{{ filteredTransactions.length }} operations</p>
-      </div>
-    </header>
-
-    <div class="flex items-center justify-between bg-brand-surface rounded-app px-4 py-3 mb-4 border border-white/5">
-      <button @click="goPrevMonth" class="text-brand-textMuted hover:text-brand-textMain transition-colors p-1">
-        <Icons.ChevronLeft class="w-5 h-5" />
-      </button>
-      <span class="text-sm font-semibold text-brand-textMain">{{ viewMonthLabel }}</span>
-      <button @click="goNextMonth"
-              class="text-brand-textMuted transition-colors p-1"
-              :class="isCurrentMonth ? 'opacity-30 cursor-not-allowed' : 'hover:text-brand-textMain'">
-        <Icons.ChevronRight class="w-5 h-5" />
-      </button>
-    </div>
-
-    <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-5 pb-1">
-      <button @click="selectedCategoryId = null"
-              class="shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border"
-              :class="selectedCategoryId === null ? 'bg-brand-primary text-white border-brand-primary' : 'bg-brand-surface text-brand-textMuted border-white/10 hover:border-white/20'">
-        All
-      </button>
-      <button v-for="cat in filterCategories" :key="cat.id" @click="selectedCategoryId = cat.id"
-              class="shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border"
-              :class="selectedCategoryId === cat.id ? 'bg-brand-primary text-white border-brand-primary' : 'bg-brand-surface text-brand-textMuted border-white/10 hover:border-white/20'">
-        {{ cat.name }}
-      </button>
-    </div>
-
-    <div v-if="transactions.length === 0" class="text-center text-brand-textMuted text-sm py-12">
-      No transactions for this month
-    </div>
-
-    <div v-else class="flex flex-col gap-3 pb-24">
-      <TransactionItem 
-        v-for="tx in filteredTransactions" 
-        :key="tx.id" 
-        :transaction="tx"
-        :iconComponent="getCategoryIcon(tx.primary_category)"
-        @edit="openSheet"
-      />
-    </div>
-
-    <BottomSheet :isOpen="!!editingTx" title="Assign Category" @close="closeSheet">
-      <div class="flex justify-between items-center mb-8 p-3 bg-brand-background rounded-lg border border-white/5">
-        <span class="text-brand-textMuted text-sm truncate pr-2">{{ editingTx.description }}</span>
-        <span class="text-brand-textMain font-bold">Đ {{ editingTx.amount.toFixed(2) }}</span>
-      </div>
-
-      <div class="flex flex-col gap-5">
-        
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-semibold text-brand-textMuted uppercase tracking-wider">Primary Category</label>
-          <div class="relative">
-            <select v-model="editingTxPrimaryId" @change="handlePrimaryChange" 
-                    class="w-full appearance-none bg-brand-background text-brand-textMain border border-white/10 rounded-xl p-4 pr-10 focus:outline-none focus:border-brand-primary font-medium">
-              <option disabled :value="null">Select category...</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
-            <Icons.ChevronDown class="w-5 h-5 absolute right-4 top-4 text-brand-textMuted pointer-events-none" />
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-2" v-if="availableSubs.length > 0">
-          <label class="text-xs font-semibold text-brand-textMuted uppercase tracking-wider">Secondary Category</label>
-          <div class="relative">
-            <select v-model="editingTxSecondaryId" 
-                    class="w-full appearance-none bg-brand-background text-brand-textMain border border-white/10 rounded-xl p-4 pr-10 focus:outline-none focus:border-brand-primary font-medium">
-              <option :value="null">None</option>
-              <option v-for="sub in availableSubs" :key="sub.id" :value="sub.id">
-                {{ sub.name }}
-              </option>
-            </select>
-            <Icons.ChevronDown class="w-5 h-5 absolute right-4 top-4 text-brand-textMuted pointer-events-none" />
-          </div>
-        </div>
-
-        <button @click="saveCategories" class="mt-4 w-full bg-brand-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-brand-secondary transition-colors">
-          Save Changes
+  <main class="w-full px-4">
+    <div class="py-4 flex flex-col gap-4 w-full">
+      <!-- Month navigation -->
+      <section class="app-card rounded-app px-3 py-2 flex items-center justify-between">
+        <button
+          type="button"
+          @click="goPrevMonth"
+          class="w-9 h-9 rounded-full flex items-center justify-center text-brand-textMuted hover:text-brand-textMain hover:bg-white/5 transition-colors"
+        >
+          <Icons.ChevronLeft :size="18" />
         </button>
-        
-      </div>
-    </BottomSheet>
-  </div>
-</template>
 
-<style scoped>
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-</style>
+        <span class="text-sm font-semibold text-brand-textMain">{{ viewMonthLabel }}</span>
+
+        <button
+          type="button"
+          @click="goNextMonth"
+          :disabled="isCurrentMonth"
+          class="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+          :class="isCurrentMonth ? 'text-brand-textMuted opacity-30 cursor-not-allowed' : 'text-brand-textMuted hover:text-brand-textMain hover:bg-white/5'"
+        >
+          <Icons.ChevronRight :size="18" />
+        </button>
+      </section>
+
+      <!-- Category filter -->
+      <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <button
+          type="button"
+          @click="selectedCategoryId = null"
+          class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors border"
+          :class="selectedCategoryId === null ? 'bg-brand-primary text-white border-transparent shadow-sm' : 'bg-brand-surface/60 text-brand-textMuted border-white/5 hover:text-brand-textMain'"
+        >
+          All
+        </button>
+        <button
+          v-for="cat in filterCategories"
+          :key="cat.id"
+          type="button"
+          @click="selectedCategoryId = cat.id"
+          class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors border"
+          :class="selectedCategoryId === cat.id ? 'bg-brand-primary text-white border-transparent shadow-sm' : 'bg-brand-surface/60 text-brand-textMuted border-white/5 hover:text-brand-textMain'"
+        >
+          {{ cat.name }}
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between px-1">
+        <span class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">
+          Records
+        </span>
+        <span class="text-[11px] font-semibold text-brand-textMuted">
+          {{ filteredTransactions.length }} records
+        </span>
+      </div>
+
+      <LoadingSkeleton v-if="loading" :lines="5" height="h-16" />
+
+      <EmptyState
+        v-else-if="filteredTransactions.length === 0"
+        :icon="Icons.Receipt"
+        title="No records"
+        :description="transactions.length === 0 ? 'No transactions for this month.' : 'No transactions for this category.'"
+      />
+
+      <section v-else class="app-card rounded-app overflow-hidden divide-y divide-white/5">
+        <TransactionItem
+          v-for="tx in filteredTransactions"
+          :key="tx.id"
+          :transaction="tx"
+          :icon-component="getCategoryIcon(tx.primary_category)"
+          @edit="openEditor"
+        />
+      </section>
+    </div>
+
+    <RecordEditor
+      :open="!!editingTx"
+      :transaction="editingTx"
+      :categories="categories"
+      :saving="saving"
+      :deleting="deleting"
+      @close="closeEditor"
+      @save="handleSave"
+      @delete="handleDelete"
+    />
+  </main>
+</template>
