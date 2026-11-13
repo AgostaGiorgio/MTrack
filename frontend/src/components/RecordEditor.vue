@@ -120,6 +120,7 @@ watch(
     if (isOpen) {
       previousBodyOverflow = document.body.style.overflow
       document.body.style.overflow = 'hidden'
+      if (isAddMode.value) resetForm()
     } else {
       document.body.style.overflow = previousBodyOverflow
       confirmingDelete.value = false
