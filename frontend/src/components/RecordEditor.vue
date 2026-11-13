@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { X, CreditCard, Trash2 } from 'lucide-vue-next'
+import { X, CreditCard, Trash2 } from '@lucide/vue'
 
 import SelectField from './ui/SelectField.vue'
 import InputField from './ui/InputField.vue'
