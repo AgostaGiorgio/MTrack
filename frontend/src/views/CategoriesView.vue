@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import * as Icons from 'lucide-vue-next'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
+import { Plus, Tags, Edit2, ChevronUp, ChevronDown, Trash2 } from '@lucide/vue'
+import * as Icons from '@lucide/vue'
 
 import { api } from '../services/api'
 import { useToast } from '../composables/useToast'
@@ -8,7 +9,8 @@ import BottomSheet from '../components/ui/BottomSheet.vue'
 import InputField from '../components/ui/InputField.vue'
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
-import IconPicker from '../components/IconPicker.vue'
+
+const IconPicker = defineAsyncComponent(() => import('../components/IconPicker.vue'))
 
 const toast = useToast()
 
@@ -126,7 +128,7 @@ onMounted(() => {
           @click="openSheet('add-primary')"
           class="h-9 pl-3 pr-4 rounded-full bg-brand-primary text-white flex items-center gap-1.5 shadow-lg shadow-brand-primary/20 hover:bg-brand-secondary active:scale-95 transition-all"
         >
-          <Icons.Plus :size="16" :stroke-width="2.5" />
+          <Plus :size="16" :stroke-width="2.5" />
           <span class="text-xs font-bold whitespace-nowrap">Add category</span>
         </button>
       </div>
@@ -135,7 +137,7 @@ onMounted(() => {
 
       <EmptyState
         v-else-if="categories.length === 0"
-        :icon="Icons.Tags"
+        :icon="Tags"
         title="No categories yet"
         description="Create your first category to start organizing expenses."
       >
@@ -144,7 +146,7 @@ onMounted(() => {
           @click="openSheet('add-primary')"
           class="flex items-center gap-1.5 px-4 py-2 rounded-app-sm bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary transition-colors"
         >
-          <Icons.Plus :size="16" /> New category
+          <Plus :size="16" /> New category
         </button>
       </EmptyState>
 
@@ -174,11 +176,11 @@ onMounted(() => {
               class="w-8 h-8 rounded-full flex items-center justify-center text-brand-textMuted hover:text-brand-primary hover:bg-white/5 transition-colors shrink-0"
               title="Edit category"
             >
-              <Icons.Edit2 :size="14" />
+              <Edit2 :size="14" />
             </button>
 
             <component
-              :is="expandedCatId === cat.id ? Icons.ChevronUp : Icons.ChevronDown"
+              :is="expandedCatId === cat.id ? ChevronUp : ChevronDown"
               :size="16"
               class="text-brand-textMuted shrink-0"
             />
@@ -207,7 +209,7 @@ onMounted(() => {
                       class="w-7 h-7 rounded-full flex items-center justify-center text-brand-textMuted hover:text-red-400 hover:bg-white/5 transition-colors shrink-0"
                       title="Delete subcategory"
                     >
-                      <Icons.Trash2 :size="13" />
+                      <Trash2 :size="13" />
                     </button>
                   </div>
                 </div>
@@ -219,7 +221,7 @@ onMounted(() => {
                   @click="openSheet('add-secondary', cat.id)"
                   class="flex items-center gap-1.5 text-brand-primary text-xs font-semibold py-1.5 hover:text-brand-secondary transition-colors"
                 >
-                  <Icons.Plus :size="14" /> Add subcategory
+                  <Plus :size="14" /> Add subcategory
                 </button>
               </div>
             </div>

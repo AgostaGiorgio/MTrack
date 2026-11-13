@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip } from 'chart.js'
-import { BarChart3 } from 'lucide-vue-next'
+import { BarChart3 } from '@lucide/vue'
 
 import { api } from '../services/api'
 import { stringToColor } from '../utils/colors'

@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import { Home, List, BarChart3, Tags } from 'lucide-vue-next'
+import { Home, List, BarChart3, Tags } from '@lucide/vue'
 
 const route = useRoute()
 

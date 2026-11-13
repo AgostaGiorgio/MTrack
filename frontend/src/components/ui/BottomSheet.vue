@@ -1,5 +1,5 @@
 <script setup>
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 
 defineProps({
   open: { type: Boolean, default: false },

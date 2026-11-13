@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import * as Icons from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Receipt } from '@lucide/vue'
+import * as Icons from '@lucide/vue'
 
 import { api } from '../services/api'
 import { useToast } from '../composables/useToast'
@@ -81,8 +82,11 @@ const filterCategories = computed(() => {
 })
 
 const editingTx = ref(null)
+const isEditorOpen = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+
+const isAddMode = computed(() => !editingTx.value)
 
 const getCategoryIcon = (category) => {
   if (!category) return Icons.Circle
@@ -95,24 +99,34 @@ const getCategoryIcon = (category) => {
 
 const openEditor = (tx) => {
   editingTx.value = { ...tx }
+  isEditorOpen.value = true
+}
+
+const openAddEditor = () => {
+  editingTx.value = null
+  isEditorOpen.value = true
 }
 
 const closeEditor = () => {
+  isEditorOpen.value = false
   editingTx.value = null
 }
 
 const handleSave = async (payload) => {
-  if (!editingTx.value) return
-
   saving.value = true
   try {
-    await api.updateTransaction(editingTx.value.id, payload)
-    toast.success('Record updated')
+    if (isAddMode.value) {
+      await api.addTransaction(payload)
+      toast.success('Record added')
+    } else {
+      await api.updateTransaction(editingTx.value.id, payload)
+      toast.success('Record updated')
+    }
     await loadTransactionsData()
     closeEditor()
   } catch (error) {
-    toast.error('Could not update the record')
-    console.error('Failed to update transaction:', error)
+    toast.error(isAddMode.value ? 'Could not add the record' : 'Could not update the record')
+    console.error('Failed to save transaction:', error)
   } finally {
     saving.value = false
   }
@@ -171,7 +185,7 @@ onMounted(() => {
           @click="goPrevMonth"
           class="w-9 h-9 rounded-full flex items-center justify-center text-brand-textMuted hover:text-brand-textMain hover:bg-white/5 transition-colors"
         >
-          <Icons.ChevronLeft :size="18" />
+          <ChevronLeft :size="18" />
         </button>
 
         <span class="text-sm font-semibold text-brand-textMain">{{ viewMonthLabel }}</span>
@@ -183,7 +197,7 @@ onMounted(() => {
           class="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
           :class="isCurrentMonth ? 'text-brand-textMuted opacity-30 cursor-not-allowed' : 'text-brand-textMuted hover:text-brand-textMain hover:bg-white/5'"
         >
-          <Icons.ChevronRight :size="18" />
+          <ChevronRight :size="18" />
         </button>
       </section>
 
@@ -213,16 +227,20 @@ onMounted(() => {
         <span class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">
           Records
         </span>
-        <span class="text-[11px] font-semibold text-brand-textMuted">
-          {{ filteredTransactions.length }} records
-        </span>
+        <button
+          type="button"
+          @click="openAddEditor"
+          class="text-[11px] font-semibold text-brand-primary hover:text-brand-secondary transition-colors"
+        >
+          + Add record
+        </button>
       </div>
 
       <LoadingSkeleton v-if="loading" :lines="5" height="h-16" />
 
       <EmptyState
         v-else-if="filteredTransactions.length === 0"
-        :icon="Icons.Receipt"
+        :icon="Receipt"
         title="No records"
         :description="transactions.length === 0 ? 'No transactions for this month.' : 'No transactions for this category.'"
       />
@@ -239,7 +257,7 @@ onMounted(() => {
     </div>
 
     <RecordEditor
-      :open="!!editingTx"
+      :open="isEditorOpen"
       :transaction="editingTx"
       :categories="categories"
       :saving="saving"

@@ -47,6 +47,11 @@ export const api = {
     return response.data
   },
 
+  async addTransaction(payload) {
+    const response = await apiClient.post('/api/v1/transactions', payload)
+    return response.data
+  },
+
   async updateTransaction(transactionId, payload) {
     const response = await apiClient.put(`/api/v1/transactions/${transactionId}`, payload)
     return response.data
