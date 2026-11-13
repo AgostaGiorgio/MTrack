@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ChevronDown, ChevronUp, CreditCard, Tags, BarChart3 } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, CreditCard, Tags, BarChart3 } from '@lucide/vue'
 
 import { api } from '../services/api'
 import { stringToColor } from '../utils/colors'

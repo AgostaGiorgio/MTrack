@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import * as Icons from 'lucide-vue-next'
+import { CreditCard, ChevronRight } from '@lucide/vue'
 import MoneyValue from './ui/MoneyValue.vue'
 import { formatDate } from '../utils/format'
 
@@ -32,7 +32,7 @@ const formattedDate = computed(() => formatDate(props.transaction.date))
       </span>
 
       <span class="flex items-center gap-1 text-[11px] text-brand-textMuted">
-        <Icons.CreditCard :size="11" class="shrink-0" />
+        <CreditCard :size="11" class="shrink-0" />
         <span class="truncate">{{ transaction.card || 'Unknown card' }}</span>
         <span class="mx-0.5">•</span>
         <span class="shrink-0">{{ formattedDate }}</span>
@@ -55,7 +55,7 @@ const formattedDate = computed(() => formatDate(props.transaction.date))
       <MoneyValue :value="transaction.amount" class="text-brand-textMain font-bold text-sm" />
       <span class="flex items-center gap-0.5 text-[10px] text-brand-textMuted">
         Edit
-        <Icons.ChevronRight :size="12" />
+        <ChevronRight :size="12" />
       </span>
     </span>
   </button>

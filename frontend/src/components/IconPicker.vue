@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
-import * as Icons from 'lucide-vue-next'
+import { Circle, Search, SearchX } from '@lucide/vue'
+import * as Icons from '@lucide/vue'
 
 defineProps({
   modelValue: { type: String, required: true },
@@ -30,13 +31,13 @@ const selectIcon = (iconName) => {
       <div class="flex items-center gap-1.5">
         <span class="text-[11px] text-brand-textMuted">Selected</span>
         <span class="w-6 h-6 rounded-full bg-brand-surface border border-white/10 flex items-center justify-center">
-          <component :is="Icons[modelValue] || Icons.Circle" :size="13" class="text-brand-primary" />
+          <component :is="Icons[modelValue] || Circle" :size="13" class="text-brand-primary" />
         </span>
       </div>
     </div>
 
     <div class="relative">
-      <Icons.Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-textMuted" />
+      <Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-textMuted" />
       <input
         v-model="iconSearch"
         type="text"
@@ -63,7 +64,7 @@ const selectIcon = (iconName) => {
         v-if="displayedIcons.length === 0"
         class="col-span-6 flex flex-col items-center justify-center h-full text-brand-textMuted opacity-50 pt-8"
       >
-        <Icons.SearchX :size="28" class="mb-2" />
+        <SearchX :size="28" class="mb-2" />
         <span class="text-sm">No icons found</span>
       </div>
     </div>
