@@ -16,10 +16,16 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save', 'delete'])
 
+const isAddMode = computed(() => !props.transaction)
+const titleText = computed(() => (isAddMode.value ? 'New record' : 'Edit record'))
+const saveButtonText = computed(() => (isAddMode.value ? 'Create record' : 'Save changes'))
+
 const amount = ref('')
 const recordDate = ref('')
 const primaryId = ref('')
 const secondaryId = ref('')
+const description = ref('')
+const card = ref('Manual')
 const amountError = ref('')
 const dateError = ref('')
 const confirmingDelete = ref(false)
@@ -46,24 +52,46 @@ const secondaryOptions = computed(() => [
 
 let previousBodyOverflow = ''
 
+const resetForm = () => {
+  amount.value = ''
+  primaryId.value = ''
+  secondaryId.value = ''
+  description.value = ''
+  card.value = 'Manual'
+  amountError.value = ''
+  dateError.value = ''
+  confirmingDelete.value = false
+  const today = new Date()
+  recordDate.value = today.toISOString().slice(0, 10)
+}
+
+const loadTransaction = (transaction) => {
+  amount.value =
+    transaction.amount !== null && transaction.amount !== undefined
+      ? Number(transaction.amount).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 6,
+          useGrouping: false,
+        })
+      : ''
+  primaryId.value = transaction.primary_category ? transaction.primary_category.id : ''
+  secondaryId.value = transaction.secondary_category ? transaction.secondary_category.id : ''
+  recordDate.value = transaction.date ? String(transaction.date).slice(0, 10) : ''
+  description.value = transaction.description || ''
+  card.value = transaction.card || 'Manual'
+  amountError.value = ''
+  dateError.value = ''
+  confirmingDelete.value = false
+}
+
 watch(
   () => props.transaction,
   (transaction) => {
-    if (!transaction) return
-    amount.value =
-      transaction.amount !== null && transaction.amount !== undefined
-        ? Number(transaction.amount).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 6,
-            useGrouping: false,
-          })
-        : ''
-    primaryId.value = transaction.primary_category ? transaction.primary_category.id : ''
-    secondaryId.value = transaction.secondary_category ? transaction.secondary_category.id : ''
-    recordDate.value = transaction.date ? String(transaction.date).slice(0, 10) : ''
-    amountError.value = ''
-    dateError.value = ''
-    confirmingDelete.value = false
+    if (transaction) {
+      loadTransaction(transaction)
+    } else {
+      resetForm()
+    }
   },
   { immediate: true }
 )
@@ -122,12 +150,19 @@ const submit = () => {
     return
   }
 
-  emit('save', {
+  const payload = {
     amount: parsedAmount,
     date: recordDate.value,
     primary_category_id: primaryId.value || null,
     secondary_category_id: secondaryId.value || null,
-  })
+  }
+
+  if (isAddMode.value) {
+    payload.description = description.value.trim() || null
+    payload.card = card.value.trim() || 'Manual'
+  }
+
+  emit('save', payload)
 }
 
 const confirmDelete = () => {
@@ -154,20 +189,36 @@ const confirmDelete = () => {
           <header class="shrink-0 flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b border-white/5">
             <div class="flex flex-col gap-1 min-w-0">
               <span class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">
-                Edit record
+                {{ titleText }}
               </span>
-              <h2
-                id="record-editor-title"
-                class="text-brand-textMain font-bold text-lg leading-snug break-words"
-              >
-                {{ transaction?.description || 'No description' }}
-              </h2>
-              <div class="flex items-center gap-1.5 text-[11px] text-brand-textMuted">
-                <CreditCard :size="12" class="shrink-0" />
-                <span class="truncate">{{ transaction?.card || 'Unknown card' }}</span>
-                <span>•</span>
-                <span class="shrink-0">{{ formattedDate }}</span>
-              </div>
+              <template v-if="!isAddMode">
+                <h2
+                  id="record-editor-title"
+                  class="text-brand-textMain font-bold text-lg leading-snug break-words"
+                >
+                  {{ transaction?.description || 'No description' }}
+                </h2>
+                <div class="flex items-center gap-1.5 text-[11px] text-brand-textMuted">
+                  <CreditCard :size="12" class="shrink-0" />
+                  <span class="truncate">{{ transaction?.card || 'Unknown card' }}</span>
+                  <span>•</span>
+                  <span class="shrink-0">{{ formattedDate }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <h2
+                  id="record-editor-title"
+                  class="text-brand-textMain font-bold text-lg leading-snug break-words"
+                >
+                  Manual entry
+                </h2>
+                <div class="flex items-center gap-1.5 text-[11px] text-brand-textMuted">
+                  <CreditCard :size="12" class="shrink-0" />
+                  <span class="truncate">{{ card || 'Manual' }}</span>
+                  <span>•</span>
+                  <span class="shrink-0">{{ formattedDate }}</span>
+                </div>
+              </template>
             </div>
 
             <button
@@ -216,6 +267,22 @@ const confirmDelete = () => {
               :error="dateError"
               :disabled="isBusy"
             />
+
+            <template v-if="isAddMode">
+              <InputField
+                v-model="description"
+                label="Description"
+                placeholder="e.g. Grocery shopping"
+                :disabled="isBusy"
+              />
+
+              <InputField
+                v-model="card"
+                label="Card / Source"
+                placeholder="e.g. Cash"
+                :disabled="isBusy"
+              />
+            </template>
 
             <!-- Categories -->
             <div class="flex flex-col gap-3 pt-4 border-t border-white/5">
@@ -275,10 +342,11 @@ const confirmDelete = () => {
                 @click="submit"
                 class="w-full bg-brand-primary text-white py-3.5 rounded-app-sm font-bold shadow-lg shadow-brand-primary/20 hover:bg-brand-secondary transition-colors disabled:opacity-60"
               >
-                {{ saving ? 'Saving…' : 'Save changes' }}
+                {{ saving ? 'Saving…' : saveButtonText }}
               </button>
 
               <button
+                v-if="!isAddMode"
                 type="button"
                 :disabled="isBusy"
                 @click="confirmingDelete = true"

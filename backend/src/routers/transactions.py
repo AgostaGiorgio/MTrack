@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import Optional
 from src.di import Container
 
-from src.routers.pojos.transactions import UpdateTransaction
+from src.routers.pojos.transactions import CreateTransaction, UpdateTransaction
 from src.models.transactions import Transaction
 from src.services.transactions import TransactionsService
 
@@ -19,6 +19,21 @@ async def get_transactions(
     transactions_service: TransactionsService = Depends(Provide[Container.transactions_service])
 ) -> list[Transaction]:
     return await transactions_service.get_transactions(year=year, month=month)
+
+@api_router.post("", response_model=Transaction, status_code=201)
+@inject
+async def create_transaction(
+    transaction_create: CreateTransaction,
+    transactions_service: TransactionsService = Depends(Provide[Container.transactions_service])
+) -> Transaction:
+    return await transactions_service.create_transaction(
+        amount=transaction_create.amount,
+        transaction_date=transaction_create.date,
+        description=transaction_create.description,
+        card=transaction_create.card,
+        primary_category_id=transaction_create.primary_category_id,
+        secondary_category_id=transaction_create.secondary_category_id,
+    )
 
 @api_router.put("/{transaction_id}", response_model=Transaction, status_code=200)
 @inject

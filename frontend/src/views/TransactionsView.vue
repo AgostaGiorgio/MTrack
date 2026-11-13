@@ -82,8 +82,11 @@ const filterCategories = computed(() => {
 })
 
 const editingTx = ref(null)
+const isEditorOpen = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+
+const isAddMode = computed(() => !editingTx.value)
 
 const getCategoryIcon = (category) => {
   if (!category) return Icons.Circle
@@ -96,24 +99,34 @@ const getCategoryIcon = (category) => {
 
 const openEditor = (tx) => {
   editingTx.value = { ...tx }
+  isEditorOpen.value = true
+}
+
+const openAddEditor = () => {
+  editingTx.value = null
+  isEditorOpen.value = true
 }
 
 const closeEditor = () => {
+  isEditorOpen.value = false
   editingTx.value = null
 }
 
 const handleSave = async (payload) => {
-  if (!editingTx.value) return
-
   saving.value = true
   try {
-    await api.updateTransaction(editingTx.value.id, payload)
-    toast.success('Record updated')
+    if (isAddMode.value) {
+      await api.addTransaction(payload)
+      toast.success('Record added')
+    } else {
+      await api.updateTransaction(editingTx.value.id, payload)
+      toast.success('Record updated')
+    }
     await loadTransactionsData()
     closeEditor()
   } catch (error) {
-    toast.error('Could not update the record')
-    console.error('Failed to update transaction:', error)
+    toast.error(isAddMode.value ? 'Could not add the record' : 'Could not update the record')
+    console.error('Failed to save transaction:', error)
   } finally {
     saving.value = false
   }
@@ -214,9 +227,13 @@ onMounted(() => {
         <span class="text-[11px] uppercase tracking-widest font-semibold text-brand-textMuted">
           Records
         </span>
-        <span class="text-[11px] font-semibold text-brand-textMuted">
-          {{ filteredTransactions.length }} records
-        </span>
+        <button
+          type="button"
+          @click="openAddEditor"
+          class="text-[11px] font-semibold text-brand-primary hover:text-brand-secondary transition-colors"
+        >
+          + Add record
+        </button>
       </div>
 
       <LoadingSkeleton v-if="loading" :lines="5" height="h-16" />
@@ -240,7 +257,7 @@ onMounted(() => {
     </div>
 
     <RecordEditor
-      :open="!!editingTx"
+      :open="isEditorOpen"
       :transaction="editingTx"
       :categories="categories"
       :saving="saving"

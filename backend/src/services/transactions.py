@@ -28,6 +28,28 @@ class TransactionsService:
                 
         return transactions
     
+    async def create_transaction(
+        self,
+        amount: float,
+        transaction_date: date,
+        description: str | None,
+        card: str | None,
+        primary_category_id: UUID | None = None,
+        secondary_category_id: UUID | None = None,
+    ) -> Transaction:
+        logger.info("Creating new transaction...")
+        created_transaction = await self.__transactions_repository.create_transaction(
+            amount=amount,
+            transaction_date=transaction_date,
+            description=description,
+            card=card,
+            primary_category_id=primary_category_id,
+            secondary_category_id=secondary_category_id,
+        )
+        logger.info("Transaction created successfully!")
+        categories = await self.__categories_repository.get_categories()
+        return self.__replace_categories(created_transaction, categories)
+
     async def update_transaction(
         self,
         transaction_id: UUID,

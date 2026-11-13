@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 from src.clients.postgres_client import PostgresClient
 from src.repositories import queries as q
 from src.models.transactions import Transaction
@@ -10,6 +10,38 @@ logger = logging.getLogger(__name__)
 class TransactionsRepository:
     def __init__(self, postgres_client: PostgresClient):
         self.__postgres_client = postgres_client
+
+    async def create_transaction(
+        self,
+        amount: float,
+        transaction_date: date,
+        description: str | None,
+        card: str | None,
+        primary_category_id: UUID | None,
+        secondary_category_id: UUID | None,
+    ) -> Transaction | None:
+        logger.debug("Executing create transaction query...")
+        created_transaction = None
+        async with self.__postgres_client.async_session() as session:
+            try:
+                result = await session.execute(q.CREATE_TRANSACTION, {
+                    "id": str(uuid4()),
+                    "amount": amount,
+                    "description": description,
+                    "card": card,
+                    "primary_category_id": str(primary_category_id) if primary_category_id else None,
+                    "secondary_category_id": str(secondary_category_id) if secondary_category_id else None,
+                    "created_at": datetime.combine(transaction_date, datetime.min.time()),
+                })
+                row = result.mappings().first()
+                if row:
+                    created_transaction = Transaction(**row)
+                    logger.debug("Transaction created successfully!")
+                await session.commit()
+            except Exception as e:
+                logger.error("Error creating transaction", exc_info=e)
+                await session.rollback()
+        return created_transaction
 
     async def get_transactions(self, start_date: datetime, end_date: datetime) -> list[Transaction] | None:
         logger.debug("Executing transactions query...")
