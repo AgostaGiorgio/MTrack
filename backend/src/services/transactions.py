@@ -1,7 +1,8 @@
 import logging
-from datetime import date
+from datetime import date, time
 from uuid import UUID
 import copy
+from fastapi import HTTPException
 from src.repositories.transactions import TransactionsRepository
 from src.repositories.categories import CategoriesRepository
 from src.models.transactions import Transaction
@@ -32,8 +33,10 @@ class TransactionsService:
         self,
         amount: float,
         transaction_date: date,
+        transaction_time: time | None,
         description: str | None,
         card: str | None,
+        card_limit: float | None = None,
         primary_category_id: UUID | None = None,
         secondary_category_id: UUID | None = None,
     ) -> Transaction:
@@ -41,11 +44,16 @@ class TransactionsService:
         created_transaction = await self.__transactions_repository.create_transaction(
             amount=amount,
             transaction_date=transaction_date,
+            transaction_time=transaction_time,
             description=description,
             card=card,
+            card_limit=card_limit,
             primary_category_id=primary_category_id,
             secondary_category_id=secondary_category_id,
         )
+        if created_transaction is None:
+            logger.error("Transaction creation returned None")
+            raise HTTPException(status_code=500, detail="Failed to create transaction")
         logger.info("Transaction created successfully!")
         categories = await self.__categories_repository.get_categories()
         return self.__replace_categories(created_transaction, categories)

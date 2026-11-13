@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, time
 from uuid import UUID, uuid4
 from src.clients.postgres_client import PostgresClient
 from src.repositories import queries as q
@@ -15,8 +15,10 @@ class TransactionsRepository:
         self,
         amount: float,
         transaction_date: date,
+        transaction_time: time | None,
         description: str | None,
         card: str | None,
+        card_limit: float | None,
         primary_category_id: UUID | None,
         secondary_category_id: UUID | None,
     ) -> Transaction | None:
@@ -24,14 +26,16 @@ class TransactionsRepository:
         created_transaction = None
         async with self.__postgres_client.async_session() as session:
             try:
+                created_at_time = transaction_time if transaction_time else datetime.now().time()
                 result = await session.execute(q.CREATE_TRANSACTION, {
                     "id": str(uuid4()),
                     "amount": amount,
-                    "description": description,
+                    "description": description or '',
                     "card": card,
+                    "card_limit": card_limit if card_limit is not None else 0,
                     "primary_category_id": str(primary_category_id) if primary_category_id else None,
                     "secondary_category_id": str(secondary_category_id) if secondary_category_id else None,
-                    "created_at": datetime.combine(transaction_date, datetime.min.time()),
+                    "created_at": datetime.combine(transaction_date, created_at_time),
                 })
                 row = result.mappings().first()
                 if row:

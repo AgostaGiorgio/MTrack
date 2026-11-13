@@ -138,8 +138,8 @@ GET_TRANSACTIONS = text("""
 """)
 
 CREATE_TRANSACTION = text("""
-    INSERT INTO transactions (id, amount, description, card, primary_category_id, secondary_category_id, created_at)
-    VALUES (:id, :amount, :description, :card, :primary_category_id, :secondary_category_id, :created_at)
+    INSERT INTO transactions (id, amount, description, card, card_limit, primary_category_id, secondary_category_id, created_at)
+    VALUES (:id, :amount, :description, :card, :card_limit, :primary_category_id, :secondary_category_id, :created_at)
     RETURNING id, amount, created_at as date, extract_merchant_name(description) as description, card, primary_category_id as primary_category, secondary_category_id as secondary_category
 """)
 

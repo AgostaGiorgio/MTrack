@@ -22,6 +22,7 @@ const saveButtonText = computed(() => (isAddMode.value ? 'Create record' : 'Save
 
 const amount = ref('')
 const recordDate = ref('')
+const recordTime = ref('')
 const primaryId = ref('')
 const secondaryId = ref('')
 const description = ref('')
@@ -52,6 +53,11 @@ const secondaryOptions = computed(() => [
 
 let previousBodyOverflow = ''
 
+const currentTimeString = () => {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
 const resetForm = () => {
   amount.value = ''
   primaryId.value = ''
@@ -63,6 +69,7 @@ const resetForm = () => {
   confirmingDelete.value = false
   const today = new Date()
   recordDate.value = today.toISOString().slice(0, 10)
+  recordTime.value = currentTimeString()
 }
 
 const loadTransaction = (transaction) => {
@@ -77,6 +84,9 @@ const loadTransaction = (transaction) => {
   primaryId.value = transaction.primary_category ? transaction.primary_category.id : ''
   secondaryId.value = transaction.secondary_category ? transaction.secondary_category.id : ''
   recordDate.value = transaction.date ? String(transaction.date).slice(0, 10) : ''
+  recordTime.value = transaction.date
+    ? String(transaction.date).slice(11, 16)
+    : currentTimeString()
   description.value = transaction.description || ''
   card.value = transaction.card || 'Manual'
   amountError.value = ''
@@ -160,6 +170,7 @@ const submit = () => {
   if (isAddMode.value) {
     payload.description = description.value.trim() || null
     payload.card = card.value.trim() || 'Manual'
+    payload.time = recordTime.value ? `${recordTime.value}:00` : undefined
   }
 
   emit('save', payload)
@@ -269,6 +280,14 @@ const confirmDelete = () => {
             />
 
             <template v-if="isAddMode">
+              <InputField
+                v-model="recordTime"
+                label="Time"
+                type="time"
+                :disabled="isBusy"
+              />
+
+
               <InputField
                 v-model="description"
                 label="Description"

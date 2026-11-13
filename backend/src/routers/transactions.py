@@ -29,8 +29,10 @@ async def create_transaction(
     return await transactions_service.create_transaction(
         amount=transaction_create.amount,
         transaction_date=transaction_create.date,
+        transaction_time=transaction_create.time,
         description=transaction_create.description,
         card=transaction_create.card,
+        card_limit=transaction_create.card_limit,
         primary_category_id=transaction_create.primary_category_id,
         secondary_category_id=transaction_create.secondary_category_id,
     )
